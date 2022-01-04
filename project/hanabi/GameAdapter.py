@@ -2,18 +2,15 @@ import socket
 from collections import UserDict
 from typing import Tuple, Union, List
 
-import hanabi.GameData as GameData
+import GameData
 from enum import Enum
 
-from hanabi.knowledge import KnowledgeMap, Color
+from .knowledge import KnowledgeMap, Color
 
 
 class HintType(Enum):
     NUMBER = 0
     COLOR = 1
-
-
-
 
 
 class KnowledgeMap2(UserDict):
@@ -36,6 +33,8 @@ class KnowledgeMap2(UserDict):
     def get_cars_sorted(self, player: str):
         return sorted([(i, color, value) for i, (color, value) in enumerate(self.data[player])],
                       key=lambda x: self.__value_tuple(x))
+
+
 # noinspection PyTypeChecker
 class GameAdapter:
     """

@@ -1,10 +1,9 @@
 import unittest
 import numpy as np
-from numpy import bool_
-from numpy.typing import ArryLike
+from numpy import bool_from numpy.typing import NDArray
 
 from project.hanabi.LCS import RuleSet
-from project.hanabi.LCS import LCSActor
+from project.hanabi.LCS import LCSRules
 from project.hanabi.LCS import GenericSensor
 
 
@@ -68,14 +67,14 @@ class LCSTest(unittest.TestCase):
     def test_action(self):
         rule_set = get_default_rule_set()
         sensor_list = [wrongSensor(1), rightSensor(1), wrongSensor(1), rightSensor(1)]  # 0101
-        lcs = LCSActor(sensor_list=sensor_list, rule=rule_set, action_length=2)
+        lcs = LCSRules(sensor_list=sensor_list, rule=rule_set, action_length=2)
         self.assertEqual(list(lcs.act(None)), [0, 1])
         self.assertEqual(list(lcs.act(None)), [0, 1])
 
     def test_end_game_data(self):
         rule_set = get_default_rule_set()
         sensor_list = [wrongSensor(1), rightSensor(1), wrongSensor(1), rightSensor(1)]  # 0101
-        lcs = LCSActor(sensor_list=sensor_list, rule=rule_set, action_length=2)
+        lcs = LCSRules(sensor_list=sensor_list, rule=rule_set, action_length=2)
         [lcs.act(None) for _ in range(10)]
         matching_data, usage_data = lcs.end_game_data()
         self.assertEqual(matching_data.shape, (10, 2))
