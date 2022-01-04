@@ -1,13 +1,11 @@
 import socket
-import time
 from collections import UserDict
-from dataclasses import dataclass
-from typing import Tuple, Union, Dict, List
+from typing import Tuple, Union, List
 
 import GameData
 from enum import Enum
 
-import game
+from knowledge import KnowledgeMap, Color
 
 
 class HintType(Enum):
@@ -15,21 +13,10 @@ class HintType(Enum):
     COLOR = 1
 
 
-class Color(Enum):
-    RED = 0
-    BLUE = 1
-    GREEN = 2
-    YELLOW = 3
-    WHITE = 4
-    UNKNOWN = 5
-    @staticmethod
-    def fromstr(string: str):
-        string = string.lower()
-        dic = {"red": Color.RED, "blue": Color.BLUE, "green": Color.GREEN, "yellow": Color.YELLOW, "white": Color.WHITE}
-        return dic[string]
 
 
-class KnowledgeMap(UserDict):
+
+class KnowledgeMap2(UserDict):
 
     def __value_tuple(self, tup):
         if tup == (Color.UNKNOWN, 0):
@@ -88,7 +75,8 @@ class GameAdapter:
         assert type(data) is GameData.ServerStartGameData
         self.socket.send(GameData.ClientPlayerReadyData(name).serialize())
         self.players = tuple(data.players)
-        self.knowledge_state = KnowledgeMap(self.players)
+        self.knowledgeMap = KnowledgeMap(list(self.players), self.name)
+        self.knowledge_state =  KnowledgeMap2(list(self.players))
 
     def _request_state(self) -> GameData.ServerGameStateData:
         """
@@ -129,7 +117,7 @@ class GameAdapter:
             except ConnectionResetError:
                 raise StopIteration
 
-
+        self.knowledgeMap.updateHands(self.move_history, self.board_state)
         return self.board_state, self.move_history
 
     def _send_action(self, action: GameData.ClientToServerData):
