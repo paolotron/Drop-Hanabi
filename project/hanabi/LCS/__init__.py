@@ -1,2 +1,2 @@
-from .LCS_actor import *
+from .LCS_Rules import *
 from .sensor import *

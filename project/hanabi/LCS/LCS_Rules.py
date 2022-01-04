@@ -95,7 +95,7 @@ class RuleSet:
         return np.hstack([self.match_string, self.dont_care, self.action])
 
 
-class LCS_actor:
+class LCSRules:
     """
     Learning Classifier System actor:
     implements the matching and covering phase

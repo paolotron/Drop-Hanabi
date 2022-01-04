@@ -1,7 +1,7 @@
 from collections import defaultdict
 from itertools import count
 
-import game
+import hanabi.game as game
 from hanabi.GameAdapter import GameAdapter
 from hanabi.GameAdapter import Color
 from hanabi.constants import *
