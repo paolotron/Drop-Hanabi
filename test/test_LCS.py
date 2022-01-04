@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
-from numpy import bool_from numpy.typing import NDArray
+from numpy import bool_
+from numpy.typing import NDArray
 
 from project.hanabi.LCS import RuleSet
 from project.hanabi.LCS import LCSRules
