@@ -5,15 +5,12 @@ from typing import Tuple, Union, List
 import GameData
 from enum import Enum
 
-from knowledge import KnowledgeMap, Color
+from .knowledge import KnowledgeMap, Color
 
 
 class HintType(Enum):
     NUMBER = 0
     COLOR = 1
-
-
-
 
 
 class KnowledgeMap2(UserDict):
@@ -36,6 +33,8 @@ class KnowledgeMap2(UserDict):
     def get_cars_sorted(self, player: str):
         return sorted([(i, color, value) for i, (color, value) in enumerate(self.data[player])],
                       key=lambda x: self.__value_tuple(x))
+
+
 # noinspection PyTypeChecker
 class GameAdapter:
     """
@@ -76,7 +75,7 @@ class GameAdapter:
         self.socket.send(GameData.ClientPlayerReadyData(name).serialize())
         self.players = tuple(data.players)
         self.knowledgeMap = KnowledgeMap(list(self.players), self.name)
-        self.knowledge_state =  KnowledgeMap2(list(self.players))
+        self.knowledge_state = KnowledgeMap2(list(self.players))
 
     def _request_state(self) -> GameData.ServerGameStateData:
         """
@@ -94,7 +93,7 @@ class GameAdapter:
         self.current = 0
         return self
 
-    def __next__(self) -> Tuple[GameData.ServerGameStateData, Tuple[GameData.ServerToClientData]]:
+    def __next__(self) -> KnowledgeMap:
         """
         next step in the iteration
         returns the current state of the board and the list of all moves
@@ -118,7 +117,7 @@ class GameAdapter:
                 raise StopIteration
 
         self.knowledgeMap.updateHands(self.move_history, self.board_state)
-        return self.board_state, self.move_history
+        return self.knowledgeMap
 
     def _send_action(self, action: GameData.ClientToServerData):
         """

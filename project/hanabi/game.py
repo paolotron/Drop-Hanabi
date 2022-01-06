@@ -1,6 +1,6 @@
 from copy import deepcopy
 from random import shuffle
-import GameData
+import hanabi.GameData as GameData
 import logging
 
 class Card(object):

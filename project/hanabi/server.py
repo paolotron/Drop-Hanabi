@@ -1,27 +1,12 @@
 import os
-import GameData
+import hanabi.GameData as GameData
 import socket
-from game import Game
+from hanabi.game import Game
 import threading
-from constants import *
 import logging
 import sys
 
-mutex = threading.Lock()
-# SERVER
-playerConnections = {}
-game = Game()
-
-playersOk = []
-
-statuses = [
-    "Lobby",
-    "Game"
-]
-status = statuses[0]
-
-commandQueue = {}
-
+from hanabi.constants import *
 
 def manageConnection(conn: socket, addr):
     global status
@@ -31,7 +16,6 @@ def manageConnection(conn: socket, addr):
         playerName = ""
         while keepActive:
             data = conn.recv(DATASIZE)
-            mutex.acquire(True)
             if not data:
                 del playerConnections[playerName]
                 logging.warning("Player disconnected: " + playerName)
@@ -91,7 +75,6 @@ def manageConnection(conn: socket, addr):
                             playerConnections[id][0].send(multipleData.serialize())
                             if game.isGameOver():
                                 os._exit(0)
-            mutex.release()
 
 
 def manageInput():
@@ -113,7 +96,24 @@ def manageNetwork():
             conn, addr = s.accept()
             threading.Thread(target=manageConnection, args=(conn, addr)).start()
 
-logging.basicConfig(filename="game.log", level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt="%m/%d/%Y %I:%M:%S %p")
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-threading.Thread(target=manageNetwork).start()
-manageInput()
+
+
+# SERVER
+playerConnections = {}
+game = Game()
+
+playersOk = []
+
+statuses = [
+    "Lobby",
+    "Game"
+]
+status = statuses[0]
+
+commandQueue = {}
+
+def start_server():
+    logging.basicConfig(filename="game.log", level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt="%m/%d/%Y %I:%M:%S %p")
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    threading.Thread(target=manageNetwork).start()
+    manageInput()
