@@ -13,12 +13,11 @@ class GenericSensor(ABC):
     """
     out_size = 1
 
-    def __init__(self, out_size: int, player: Union[str, None]):
+    def __init__(self, out_size: int):
         """
         Constructor for Generic Sensor
         @param out_size: length of the outputted bit_string
         """
-        player = player
         out_size = out_size
 
     @abstractmethod

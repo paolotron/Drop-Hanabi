@@ -1,6 +1,6 @@
 from typing import List
 from numpy.typing import NDArray
-from .. import GameAdapter
+from hanabi.GameAdapter import GameAdapter
 
 
 class LCSActor:
