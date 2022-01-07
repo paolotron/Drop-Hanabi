@@ -1,11 +1,13 @@
 import socket
+from abc import ABC, abstractmethod
 from collections import UserDict
-from typing import Tuple, Union, List
+from typing import Union, List
+from constants import *
 
 import GameData
 from enum import Enum
 
-from .knowledge import KnowledgeMap, Color
+from knowledge import KnowledgeMap, Color
 
 
 class HintType(Enum):
@@ -236,4 +238,41 @@ class GameAdapter:
             return False
         raise ValueError
 
+    def end_game_data(self):
+        return {
+            "n_turns": len(self.move_history),
+            "points": sum(max(self.board_state.tableCards.values, key=lambda x: x.value)),
+            "loss": self.board_state.usedStormTokens == 3
+        }
 
+
+class Player(ABC):
+
+    def __init__(self, name: str, conn_params=None):
+        self.name = name
+        if conn_params is None:
+            self.start_dict = {
+                'name': name,
+                'ip': HOST,
+                'port': PORT,
+                'datasize': DATASIZE,
+                'nplayers': NPLAYERS
+            }
+        else:
+            self.start_dict = conn_params
+        self.io = None
+
+    @abstractmethod
+    def make_action(self, state):
+        pass
+
+    @abstractmethod
+    def setup(self):
+        pass
+
+    def start(self, *args, **kwargs):
+        self.io = GameAdapter(**self.start_dict)
+        self.setup()
+        for state in self.io:
+            self.make_action(state)
+        return

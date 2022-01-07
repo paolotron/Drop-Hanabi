@@ -1,6 +1,6 @@
 from typing import List
 import numpy as np
-from hanabi.GameAdapter import GameAdapter, HintType
+from GameAdapter import GameAdapter, HintType
 from numpy.typing import NDArray
 from random import choice
 
@@ -9,6 +9,7 @@ class LCSActor:
 
     def __init__(self, io: GameAdapter):
         self.io = io
+        self.action_length = 2
 
     def _get_hint_params(self):
         player = choice(self.io.get_other_players())
@@ -16,6 +17,10 @@ class LCSActor:
         value = choice([0, 1, 2, 3, 4]) if type_hint == HintType.NUMBER else choice(
             ['red', 'blue', 'yellow', 'white', 'green'])
         return player, type_hint, value
+
+    @staticmethod
+    def get_action_length(num_players=2):
+        return 2
 
     def act(self, act_string: NDArray) -> None:
         """
@@ -37,7 +42,7 @@ class LCSActor:
             index = np.randint(0, 3)
 
         if index == 0:
-            self.io.send_hint(self._get_hint_params())
+            self.io.send_hint(*self._get_hint_params())
         elif index == 1:
             self.io.send_play_card(choice([0, 1, 2, 3, 4]))
         else:

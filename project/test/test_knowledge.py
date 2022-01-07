@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from project.hanabi import GameData
-from project.hanabi import knowledge
+import project.hanabi.knowledge as knowledge
 
 
 class Card:
