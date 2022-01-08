@@ -20,6 +20,9 @@ class GenericSensor(ABC):
         """
         out_size = out_size
 
+    def get_out_size(self):
+        return self.out_size
+
     @abstractmethod
     def activate(self, knowledge_map: KnowledgeMap) -> NDArray[bool_]:
         """
@@ -31,56 +34,125 @@ class GenericSensor(ABC):
 
 
 class DiscardKnowSensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5)
+        else:
+            super().__init__(4)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(discard_known(knowledge_map.getOnePlayerHand(knowledge_map.getPlayerName()),
+        return np.array(discard_known(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()),
                                       knowledge_map.getTableCards()))
 
 
 class DiscardUnknownSensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5)
+        else:
+            super().__init__(4)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(discard_unknown(knowledge_map.getOnePlayerHand(knowledge_map.getPlayerName())))
+        return np.array(discard_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName())))
 
 
 class SurePlaySensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5)
+        else:
+            super().__init__(4)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(play_known(knowledge_map.getOnePlayerHand(knowledge_map.getPlayerName()),
+        return np.array(play_known(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()),
                                    knowledge_map.getTableCards()))
 
 
 class RiskyPlaySensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5)
+        else:
+            super().__init__(4)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(play_unknown(knowledge_map.getOnePlayerHand(knowledge_map.getPlayerName())))
+        return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName())))
 
 
 class NoHintLeftSensor(GenericSensor):
+    def __init__(self):
+        super().__init__(1)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return knowledge_map.getNoteTokens() == 8
+        return np.array(knowledge_map.getNoteTokens() == 8)
 
 
 class HintNumberToPlaySensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5*(n_player-1))
+        else:
+            super().__init__(4*(n_player-1))
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
         return np.array(hint_number(knowledge_map))
 
 
 class HintColorToPlaySensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5*(n_player-1))
+        else:
+            super().__init__(4*(n_player-1))
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
         return np.array(hint_color(knowledge_map))
 
 
 class HintToDiscardSensor(GenericSensor):
+    def __init__(self, n_player: int):
+        if n_player == 2 or n_player == 3:
+            super().__init__(5*(n_player-1))
+        else:
+            super().__init__(4*(n_player-1))
+
+    def get_out_size(self):
+        return super().get_out_size()
+
     def activate(self, knowledge_map) -> NDArray[bool_]:
         return np.array(hint_discard(knowledge_map))
 
 
-def package_sensors():
-    return [DiscardKnowSensor(1),
-            DiscardUnknownSensor(1),
-            SurePlaySensor(1),
-            RiskyPlaySensor(1),
-            NoHintLeftSensor(1),
-            HintNumberToPlaySensor(1),
-            HintColorToPlaySensor(1),
-            HintToDiscardSensor(1)]
+def package_sensors(n_player: int):
+    return [DiscardKnowSensor(n_player),
+            DiscardUnknownSensor(n_player),
+            SurePlaySensor(n_player),
+            RiskyPlaySensor(n_player),
+            NoHintLeftSensor(),
+            HintNumberToPlaySensor(n_player),
+            HintColorToPlaySensor(n_player),
+            HintToDiscardSensor(n_player)]
 
 
 def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int:
