@@ -254,7 +254,7 @@ def __can_be_played(card, table_cards: Dict[str, List]) -> bool:
 
 def __hint_type(knowledge: ArrayLike, card) -> int:
     """
-    return information about card on the end of a player
+    return information about card on the hand of a player
     @param knowledge: matrix 5x5
     @param card: card
     @return -1 if player doesn't know anything about the card
@@ -281,12 +281,15 @@ def __hint_type(knowledge: ArrayLike, card) -> int:
     return -1
 
 
-def check_card(col: Color, hand: List, table_cards: Dict[str, List]):
+def check_card(number: int, hand: List, knowledge_map: KnowledgeMap, player_name: str, color_or_number: int):
     ret_val = False
     for card in hand:
-        if card.color == col and __can_be_played(card, table_cards):
+        res = __hint_type(knowledge_map.getProbabilityMatrix(player_name), card)
+        if res == color_or_number or res == 0:
+            continue
+        if card.color == number and __can_be_played(card, knowledge_map.getTableCards()):
             ret_val = True
-        if card.value == col and not __can_be_played(card, table_cards):
+        if card.value == number and not __can_be_played(card, knowledge_map.getTableCards()):
             return False
     return ret_val
 
@@ -301,7 +304,7 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     ret = []
     for player in knowledge_map.getPlayerList():
         for i in range(1, 6):
-            val = check_card(i, player.hand, knowledge_map.getTableCards())
+            val = check_card(i, player.hand, knowledge_map, player.name, 1)
             ret.append(val)
 
     return ret
@@ -319,7 +322,7 @@ def hint_color(knowledge_map: KnowledgeMap):
         for color in Color:
             if color == Color.UNKNOWN:
                 continue
-            val = check_card(color, player.hand, knowledge_map.getTableCards())
+            val = check_card(color, player.hand, knowledge_map, player.name, 2)
             ret.append(val)
 
     return ret
@@ -345,8 +348,11 @@ def hint_discard(knowledge_map: KnowledgeMap):
     j = 0
     for player in knowledge_map.getPlayerList():
         for card in player.hand:
-            ret[j + card.value - 1] = number_can_be_discarded(card.value, knowledge_map.getTableCards())
-            ret[j + 5 + Color.fromstr(card.color)] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
+            res = __hint_type(knowledge_map.getProbabilityMatrix(player.name), card)
+            if res == 2 or res == -1:
+                ret[j + card.value - 1] = number_can_be_discarded(card.value, knowledge_map.getTableCards())
+            elif res == 1 or res == -1:
+                ret[j + 5 + Color.fromstr(card.color)] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
         j += 10
 
     return ret
