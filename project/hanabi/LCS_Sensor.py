@@ -287,9 +287,11 @@ def check_card(number: int, hand: List, knowledge_map: KnowledgeMap, player_name
         res = __hint_type(knowledge_map.getProbabilityMatrix(player_name), card)
         if res == color_or_number or res == 0:
             continue
-        if card.color == number and __can_be_played(card, knowledge_map.getTableCards()):
+        if (card.value if color_or_number == 1 else card.color) == number \
+                and __can_be_played(card, knowledge_map.getTableCards()):
             ret_val = True
-        if card.value == number and not __can_be_played(card, knowledge_map.getTableCards()):
+        if (card.value if color_or_number == 1 else card.color) == number \
+                and not __can_be_played(card, knowledge_map.getTableCards()):
             return False
     return ret_val
 
