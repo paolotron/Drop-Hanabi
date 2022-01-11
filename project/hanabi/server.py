@@ -93,8 +93,10 @@ print("Type 'exit' to end the program")
 
 
 def manageNetwork():
+    global sem
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
+        sem.release()
         logging.info("Hanabi server started on " + HOST + ":" + str(PORT))
         while True:
             s.listen()

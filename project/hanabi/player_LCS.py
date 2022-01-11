@@ -14,8 +14,9 @@ class LCSPlayer(Player):
         self.actor = LCSActor(self.io)
 
     def make_action(self, state):
-        act_string = self.rules.act(state)
-        self.actor.act(act_string)
+        self.io.send_play_card(0)
+        # act_string = self.rules.act(state)
+        # self.actor.act(act_string)
 
 
 

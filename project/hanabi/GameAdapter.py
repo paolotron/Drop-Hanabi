@@ -63,7 +63,15 @@ class GameAdapter:
         self.board_state = None
         self.board_state: GameData.ServerGameStateData
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((ip, port))
+        count = 10
+        while True:
+            try:
+                self.socket.connect((ip, port))
+                break
+            except ConnectionRefusedError:
+                count -= 1
+                if not count:
+                    raise ConnectionRefusedError
         self.socket.send(GameData.ClientPlayerAddData(name).serialize())
         assert type(GameData.GameData.deserialize(self.socket.recv(datasize))) is GameData.ServerPlayerConnectionOk
         print("Connection accepted by the server. Welcome " + name)
@@ -84,8 +92,11 @@ class GameAdapter:
         Request Board State
         """
         self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
-        while self._register_action(GameData.GameData.deserialize(self.socket.recv(self.datasize))) is not GameData.ServerGameStateData:
-            pass
+        while True:
+            request = GameData.GameData.deserialize(self.socket.recv(self.datasize))
+            t = self._register_action(request)
+            if t is GameData.ServerGameStateData:
+                break
 
     def __iter__(self):
         """
@@ -166,6 +177,9 @@ class GameAdapter:
         elif type(response) is GameData.ServerGameOver:
             self.game_end = True
             raise StopIteration
+
+        elif type(response) is GameData.ServerStartGameData:
+            self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
 
         return type(response)
 
@@ -260,7 +274,7 @@ class Player(ABC):
             }
         else:
             self.start_dict = conn_params
-        self.io = None
+        self.io: GameAdapter
 
     @abstractmethod
     def make_action(self, state):
