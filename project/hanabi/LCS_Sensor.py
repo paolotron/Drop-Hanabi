@@ -164,10 +164,12 @@ def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int
     p = []
     for color in table_cards.keys():
         index = Color.fromstr(color)
-        if len(table_cards[color]) < 5:
-            p.append(probability[index][table_cards[color][-1].value])
+        if len(table_cards[color]) == 0:
+            p.append(probability[index.value][0])
+        elif 0 < len(table_cards[color]) < 5:
+            p.append(probability[index.value][table_cards[color][-1].value])
         for card in table_cards[color]:
-            if probability[index][card.value] == 1:
+            if probability[index.value][card.value] == 1:
                 # discard
                 return -1
     if any([x >= 1 for x in p]):
@@ -301,7 +303,7 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     ret = []
     for player in knowledge_map.getPlayerList():
         for i in range(1, 6):
-            val = check_card(i, player.hand, knowledge_map.getTableCards())
+            val = check_card(i, knowledge_map.hands[player], knowledge_map.getTableCards())
             ret.append(val)
 
     return ret
@@ -319,7 +321,7 @@ def hint_color(knowledge_map: KnowledgeMap):
         for color in Color:
             if color == Color.UNKNOWN:
                 continue
-            val = check_card(color, player.hand, knowledge_map.getTableCards())
+            val = check_card(color.value, knowledge_map.hands[player], knowledge_map.getTableCards())
             ret.append(val)
 
     return ret
@@ -344,9 +346,9 @@ def hint_discard(knowledge_map: KnowledgeMap):
     ret = [False] * 10 * len(knowledge_map.getPlayerList())
     j = 0
     for player in knowledge_map.getPlayerList():
-        for card in player.hand:
+        for card in knowledge_map.hands[player]:
             ret[j + card.value - 1] = number_can_be_discarded(card.value, knowledge_map.getTableCards())
-            ret[j + 5 + Color.fromstr(card.color)] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
+            ret[j + 5 + Color.fromstr(card.color).value] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
         j += 10
 
     return ret
