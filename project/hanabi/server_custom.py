@@ -24,6 +24,7 @@ status = statuses[0]
 commandQueue = {}
 numPlayers = 2
 
+
 def manageConnection(conn: socket, addr):
     global status
     global game
@@ -32,9 +33,7 @@ def manageConnection(conn: socket, addr):
         keepActive = True
         playerName = ""
         while keepActive:
-            print("SERVER WAITING")
             data = conn.recv(DATASIZE)
-            print(f"SERVER PROCESSING {GameData.GameData.deserialize(data)}")
             mutex.acquire(True)
             if not data:
                 del playerConnections[playerName]
@@ -46,7 +45,6 @@ def manageConnection(conn: socket, addr):
                 keepActive = False
             else:
                 data = GameData.GameData.deserialize(data)
-                print(f"SERVER RECEIVED {type(data)} from {data.sender}")
                 if status == "Lobby":
                     if type(data) is GameData.ClientPlayerAddData:
                         playerName = data.sender
@@ -54,8 +52,7 @@ def manageConnection(conn: socket, addr):
                         playerConnections[playerName] = (conn, addr)
                         logging.info("Player connected: " + playerName)
                         game.addPlayer(playerName)
-                        conn.send(GameData.ServerPlayerConnectionOk(
-                            playerName).serialize())
+                        conn.send(GameData.ServerPlayerConnectionOk(playerName).serialize())
                     elif type(data) is GameData.ClientPlayerStartRequest:
                         if playerName not in game.getPlayers() and playerName != "" and playerName is not None:
                             game.setPlayerReady(playerName)
@@ -68,11 +65,9 @@ def manageConnection(conn: socket, addr):
                             listNames = []
                             for player in game.getPlayers():
                                 listNames.append(player.name)
-                            logging.info(
-                                "Game start! Between: " + str(listNames))
+                            logging.info("Game start! Between: " + str(listNames))
                             for player in playerConnections:
-                                playerConnections[player][0].send(
-                                    GameData.ServerStartGameData(listNames).serialize())
+                                playerConnections[player][0].send(GameData.ServerStartGameData(listNames).serialize())
                             game.start()
                     # This ensures every player is ready to send requests
                     elif type(data) is GameData.ClientPlayerReadyData:
@@ -82,15 +77,12 @@ def manageConnection(conn: socket, addr):
                         status = "Game"
                         for player in commandQueue:
                             for cmd in commandQueue[player]:
-                                singleData, multipleData = game.satisfyRequest(
-                                    cmd, player)
+                                singleData, multipleData = game.satisfyRequest(cmd, player)
                                 if singleData is not None:
-                                    playerConnections[player][0].send(
-                                        singleData.serialize())
+                                    playerConnections[player][0].send(singleData.serialize())
                                 if multipleData is not None:
                                     for id in playerConnections:
-                                        playerConnections[id][0].send(
-                                            multipleData.serialize())
+                                        playerConnections[id][0].send(multipleData.serialize())
                                         if game.isGameOver():
                                             os._exit(0)
                         commandQueue.clear()
@@ -100,18 +92,15 @@ def manageConnection(conn: socket, addr):
                         commandQueue[playerName].append(data)
                 # In game
                 elif status == "Game":
-                    singleData, multipleData = game.satisfyRequest(
-                        data, playerName)
+                    singleData, multipleData = game.satisfyRequest(data, playerName)
                     if singleData is not None:
                         conn.send(singleData.serialize())
                     if multipleData is not None:
                         for id in playerConnections:
-                            playerConnections[id][0].send(
-                                multipleData.serialize())
+                            playerConnections[id][0].send(multipleData.serialize())
                             if game.isGameOver():
                                 logging.info("Game over")
-                                logging.info("Game score: " +
-                                             str(game.getScore()))
+                                logging.info("Game score: " + str(game.getScore()))
                                 # os._exit(0)
                                 players = game.getPlayers()
                                 game = Game()
@@ -137,8 +126,7 @@ def manageNetwork():
         while True:
             s.listen()
             conn, addr = s.accept()
-            threading.Thread(target=manageConnection,
-                             args=(conn, addr)).start()
+            threading.Thread(target=manageConnection, args=(conn, addr)).start()
 
 
 def start_server(nplayers):

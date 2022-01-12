@@ -1,4 +1,5 @@
 import socket
+import time
 from abc import ABC, abstractmethod
 from collections import UserDict
 from typing import Union, List
@@ -15,28 +16,6 @@ class HintType(Enum):
     COLOR = 1
 
 
-class KnowledgeMap2(UserDict):
-
-    def __value_tuple(self, tup):
-        if tup == (Color.UNKNOWN, 0):
-            return 0
-        if (tup[0] == Color.UNKNOWN and tup[1] != 0) or (tup[0] != Color.UNKNOWN and tup[1] == 0):
-            return 1
-        return 2
-
-    def __init__(self, player_list: List[str]):
-        self.players = player_list
-        self.num_cards = 4 if len(player_list) > 3 else 5
-        super().__init__({player: [(Color.UNKNOWN, 0)] * self.num_cards for player in player_list})
-
-    def get_known(self, player: str):
-        return [(i, color, value) for i, (color, value) in enumerate(self.data[player]) if (color, value) != (Color.UNKNOWN, 0)]
-
-    def get_cars_sorted(self, player: str):
-        return sorted([(i, color, value) for i, (color, value) in enumerate(self.data[player])],
-                      key=lambda x: self.__value_tuple(x))
-
-
 # noinspection PyTypeChecker
 class GameAdapter:
     """
@@ -44,14 +23,13 @@ class GameAdapter:
     Use it in a for loop to iterate through the game
     """
 
-    def __init__(self, name: str, *, ip: str = '127.0.0.1', port: int = 1026, datasize: int = 10240, nplayers=2):
+    def __init__(self, name: str, *, ip: str = '127.0.0.1', port: int = 1026, datasize: int = 10240):
         """
         Initialize Game Manager creating a connection with the server
         @param name: Player Name
         @param ip: Host IP
         @param port: Process Port
         @param datasize: Size of the socket packets
-        @param nplayers: number of players to wait in the lobby
         """
         self.name = name
         self.ip = ip
@@ -63,7 +41,12 @@ class GameAdapter:
         self.board_state = None
         self.board_state: GameData.ServerGameStateData
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((ip, port))
+        while True:
+            try:
+                self.socket.connect((ip, port))
+                break
+            except ConnectionRefusedError:
+                time.sleep(0.001)
         self.socket.send(GameData.ClientPlayerAddData(name).serialize())
         assert type(GameData.GameData.deserialize(self.socket.recv(datasize))) is GameData.ServerPlayerConnectionOk
         print("Connection accepted by the server. Welcome " + name)
@@ -71,21 +54,28 @@ class GameAdapter:
         self.socket.send(GameData.ClientPlayerStartRequest(name).serialize())
         data = GameData.GameData.deserialize(self.socket.recv(datasize))
         assert type(data) is GameData.ServerPlayerStartRequestAccepted
-        #print("Ready: " + str(data.acceptedStartRequests) + "/" + str(data.connectedPlayers) + " players")
+        # print("Ready: " + str(data.acceptedStartRequests) + "/" + str(data.connectedPlayers) + " players")
         data = GameData.GameData.deserialize(self.socket.recv(datasize))
         assert type(data) is GameData.ServerStartGameData
         self.socket.send(GameData.ClientPlayerReadyData(name).serialize())
         self.players = tuple(data.players)
         self.knowledgeMap = KnowledgeMap(list(self.players), self.name)
-        self.knowledge_state = KnowledgeMap2(list(self.players))
+        time.sleep(0.01)
 
     def _request_state(self) -> GameData.ServerGameStateData:
         """
         Request Board State
         """
-        self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
-        while self._register_action(GameData.GameData.deserialize(self.socket.recv(self.datasize))) is not GameData.ServerGameStateData:
-            pass
+        data = GameData.ClientGetGameStateRequest(self.name)
+        print(f"{self.name} DEBUG: {type(data)} PLAYER: {data.sender}")
+        self.socket.send(data.serialize())
+        while True:
+            print(f"{self.name} STUCK IN REQUEST")
+            request = GameData.GameData.deserialize(self.socket.recv(self.datasize))
+            t = self._register_action(request)
+            if t is GameData.ServerGameStateData:
+                break
+        print(f"{self.name} UNSTUCK, USED STORM TOKENS {self.board_state.usedStormTokens}")
 
     def __iter__(self):
         """
@@ -104,12 +94,10 @@ class GameAdapter:
         if self.game_end:
             raise StopIteration
 
-        print(f"{self.name} has requested state")
         try:
             self._request_state()
         except ConnectionResetError:
             raise StopIteration
-        print(f"{self.name} has recieved state")
         while self.board_state.currentPlayer != self.name:
             try:
                 response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
@@ -136,38 +124,35 @@ class GameAdapter:
         return response
 
     def _register_action(self, response: GameData.ServerToClientData):
-        print(f"{self.name} has recieved {type(response)}")
+
         if type(response) is GameData.ServerGameStateData:
             response: GameData.ServerGameStateData
             self.board_state = response
-
+            print(f"BOARDSTATE {self.name}: ", end='')
+            print(f"{self.board_state.currentPlayer}")
         elif type(response) is GameData.ServerHintData:
             response: GameData.ServerHintData
             self.move_history.append(response)
-            for i in response.positions:
-                known_color, known_value = self.knowledge_state[response.destination][i]
-                if response.type == 'value':
-                    new_know = (known_color, response.value)
-                else:
-                    new_know = (Color.fromstr(response.value), known_value)
-                self.knowledge_state[response.destination][i] = new_know
-
         elif type(response) is GameData.ServerPlayerMoveOk or type(response) is GameData.ServerPlayerThunderStrike:
             response: GameData.ServerPlayerMoveOk
             self.move_history.append(response)
-            position = [player.hand.index(response.card) for player in self.board_state.players if player.name == response.sender]
-            if position:
-                self.knowledge_state[response.player][position[0]] = (Color.UNKNOWN, 0)
-
         elif type(response) is GameData.ServerActionValid:
             response: GameData.ServerActionValid
             self.move_history.append(response)
-
         elif type(response) is GameData.ServerGameOver:
             self.game_end = True
             raise StopIteration
+        elif type(response) is GameData.ServerStartGameData:
+            self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
 
         return type(response)
+
+    def reset(self):
+        self.move_history = []
+        self.action = None
+        self.game_end = False
+        self.board_state = None
+        self.knowledgeMap = KnowledgeMap(list(self.players), self.name)
 
     def get_all_players(self):
         """
@@ -239,9 +224,10 @@ class GameAdapter:
         raise ValueError
 
     def end_game_data(self):
+        points = sum([max(map(lambda x: x.value, cards), default=0) for cards in self.board_state.tableCards.values()])
         return {
             "n_turns": len(self.move_history),
-            "points": sum(max(self.board_state.tableCards.values, key=lambda x: x.value)),
+            "points": points,
             "loss": self.board_state.usedStormTokens == 3
         }
 
@@ -256,7 +242,6 @@ class Player(ABC):
                 'ip': HOST,
                 'port': PORT,
                 'datasize': DATASIZE,
-                'nplayers': NPLAYERS
             }
         else:
             self.start_dict = conn_params
@@ -266,13 +251,24 @@ class Player(ABC):
     def make_action(self, state):
         pass
 
-    @abstractmethod
-    def setup(self):
+    def setup(self, *args, **kwargs):
         pass
 
+    def cleanup(self):
+        pass
+
+    def end_game_data(self):
+        return self.io.end_game_data()
+
     def start(self, *args, **kwargs):
-        self.io = GameAdapter(**self.start_dict)
-        self.setup()
+
+        if self.io is None:
+            self.io = GameAdapter(**self.start_dict)
+        else:
+            self.io.reset()
+
+        self.setup(*args, **kwargs)
         for state in self.io:
             self.make_action(state)
-        return
+
+        self.cleanup()
