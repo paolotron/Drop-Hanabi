@@ -1,12 +1,13 @@
 import os
-import hanabi.GameData as GameData
+import GameData as GameData
 import socket
-from hanabi.game import Game
+from game import Game
 import threading
 import logging
 import sys
 
-from hanabi.constants import *
+from constants import *
+
 
 def manageConnection(conn: socket, addr):
     global status
@@ -22,7 +23,7 @@ def manageConnection(conn: socket, addr):
                 game.removePlayer(playerName)
                 keepActive = False
             else:
-                data = GameData.GameData.deserialize(data)    
+                data = GameData.GameData.deserialize(data)
                 if status == "Lobby":
                     if type(data) is GameData.ClientPlayerAddData:
                         playerName = data.sender
@@ -35,7 +36,8 @@ def manageConnection(conn: socket, addr):
                         if playerName not in game.getPlayers() and playerName != "" and playerName is not None:
                             game.setPlayerReady(playerName)
                             logging.info("Player ready: " + playerName)
-                            conn.send(GameData.ServerPlayerStartRequestAccepted(len(game.getPlayers()), game.getNumReadyPlayers()).serialize())
+                            conn.send(GameData.ServerPlayerStartRequestAccepted(len(game.getPlayers()),
+                                                                                game.getNumReadyPlayers()).serialize())
                         else:
                             return
                         if len(game.getPlayers()) == game.getNumReadyPlayers() and len(game.getPlayers()) > 1:
@@ -63,7 +65,9 @@ def manageConnection(conn: socket, addr):
                                         if game.isGameOver():
                                             os._exit(0)
                         commandQueue.clear()
-                    elif type(data) is not GameData.ClientPlayerAddData and type(data) is not GameData.ClientPlayerStartRequest and type(data) is not GameData.ClientPlayerReadyData:
+                    elif type(data) is not GameData.ClientPlayerAddData and type(
+                            data) is not GameData.ClientPlayerStartRequest and type(
+                        data) is not GameData.ClientPlayerReadyData:
                         commandQueue[playerName].append(data)
                 # In game
                 elif status == "Game":
@@ -84,6 +88,7 @@ def manageInput():
             logging.info("Closing the server...")
             os._exit(0)
 
+
 print("Type 'exit' to end the program")
 
 
@@ -95,7 +100,6 @@ def manageNetwork():
             s.listen()
             conn, addr = s.accept()
             threading.Thread(target=manageConnection, args=(conn, addr)).start()
-
 
 
 # SERVER
@@ -112,8 +116,14 @@ status = statuses[0]
 
 commandQueue = {}
 
+
 def start_server():
-    logging.basicConfig(filename="game.log", level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt="%m/%d/%Y %I:%M:%S %p")
+    logging.basicConfig(filename="game.log", level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s',
+                        datefmt="%m/%d/%Y %I:%M:%S %p")
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
     threading.Thread(target=manageNetwork).start()
     manageInput()
+
+
+if __name__ == '__main__':
+    start_server()
