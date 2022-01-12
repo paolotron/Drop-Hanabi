@@ -7,11 +7,10 @@ import socket
 from constants import *
 import os
 
-
 if len(argv) < 4:
     print("You need the player name to start the game.")
-    #exit(-1)
-    playerName = argv[1] # For debug
+    # exit(-1)
+    playerName = argv[1]  # For debug
     ip = HOST
     port = PORT
 else:
@@ -104,7 +103,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         data = GameData.GameData.deserialize(data)
         if type(data) is GameData.ServerPlayerStartRequestAccepted:
             dataOk = True
-            print("Ready: " + str(data.acceptedStartRequests) + "/"  + str(data.connectedPlayers) + " players")
+            print("Ready: " + str(data.acceptedStartRequests) + "/" + str(data.connectedPlayers) + " players")
             data = s.recv(DATASIZE)
             data = GameData.GameData.deserialize(data)
         if type(data) is GameData.ServerStartGameData:
@@ -126,7 +125,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 print("]")
             print("Discard pile: ")
             for c in data.discardPile:
-                print("\t" + c.toClientString())            
+                print("\t" + c.toClientString())
             print("Note tokens used: " + str(data.usedNoteTokens) + "/8")
             print("Storm tokens used: " + str(data.usedStormTokens) + "/3")
         if type(data) is GameData.ServerActionInvalid:
@@ -159,9 +158,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print(data.score)
             print(data.scoreMessage)
             stdout.flush()
-            #run = False
+            # run = False
             print("Ready for a new game!")
         if not dataOk:
-            print("Unknown or unimplemented data type: " +  str(type(data)))
+            print("Unknown or unimplemented data type: " + str(type(data)))
         print("[" + playerName + " - " + status + "]: ", end="")
         stdout.flush()

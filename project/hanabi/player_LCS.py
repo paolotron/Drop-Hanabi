@@ -1,22 +1,30 @@
-from GameAdapter import GameAdapter, Player
+from typing import Union
+
+from GameAdapter import Player
 from LCS_Actor import LCSActor
 from LCS_Rules import LCSRules
 
 
 class LCSPlayer(Player):
 
-    def __init__(self, name, rules: LCSRules):
+    def __init__(self, name):
         super().__init__(name)
-        self.rules = rules
+        self.rules: Union[LCSRules, None] = None
         self.actor = None
 
-    def setup(self):
+    def setup(self, rules: LCSRules):
+        self.rules: LCSRules = rules
         self.actor = LCSActor(self.io)
 
     def make_action(self, state):
-        self.io.send_play_card(0)
-        # act_string = self.rules.act(state)
-        # self.actor.act(act_string)
+        while True:
+            act_string = self.rules.act(state)
+            res = self.actor.act(act_string)
+            if not res:
+                self.rules.signal_critical_failure()
+            else:
+                break
+
 
 
 

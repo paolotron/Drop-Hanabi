@@ -1,11 +1,12 @@
-from typing import List
+from typing import List, Union
 import os
 import time
 from threading import Thread, Semaphore
+import numpy as np
 
 from LCS_Rules import LCSRules, RuleSet
 from LCS_Actor import LCSActor
-import server
+import server_custom as server
 from LCS_Rules import RuleSet
 from player_LCS import LCSPlayer
 import LCS_Sensor as sens
@@ -21,29 +22,33 @@ class Evolver:
         # sto metodo mi ritorna altri ruleSet
         pass
 
+class GameManager:
 
-def get_fitness(rule_list: List[LCSRules]):
-    pass
+    def __init__(self, n_players):
+        self.n_players = n_players
+        self.serv = Thread(target=server.start_server, args=[self.n_players])
+        self.serv.start()
+        self.players = [LCSPlayer(name=f'LCS{i}') for i in range(self.n_players)]
 
-
-if __name__ == '__main__':
-    for i in range(10):
-        n_players = 2
-        print("MATCH ", i)
-        sem = Semaphore(0)
-        server = Thread(target=server.start_server, args=[sem])
-        server.start()
-        sem.acquire()
-        sensor_list = sens.package_sensors(n_players)
-        rule = [LCSRules(sensor_list=sensor_list,
-                         action_length=LCSActor.get_action_length(),
-                         rule=RuleSet.empty_rules(0, action_length=LCSActor.get_action_length()))
-                for _ in range(n)]
-        players = [LCSPlayer(name='LCS1', rules=rule[0]), LCSPlayer(name='LCS2', rules=rule[1])]
-        threads = [Thread(target=player.start) for player in players]
+    def get_fitness(self, rule_list: List[LCSRules]):
+        threads = [Thread(target=player.start, args=[rule_list[i]]) for i, player in enumerate(self.players)]
         [t.start() for t in threads]
         [t.join() for t in threads]
-        server.join()
-        if not os.path.exists('./logs'):
-            os.mkdir('./logs')
-        os.rename('./game.log', f'./logs/{time.strftime("%y%m%d%H%M%S")}.log')
+        results = [player.io.end_game_data() for player in self.players]
+        return results
+
+    def close(self):
+        self.serv.join()
+
+
+def dummy_play(n_players):
+    man = GameManager(n_players)
+    for i in range(100):
+        rules = [LCSRules(sens.package_sensors(n_players), LCSActor.get_action_length()) for _ in range(n_players)]
+        j = man.get_fitness(rules)
+        res = [rule.end_game_data() for rule in rules]
+    return
+
+if __name__ == '__main__':
+    npl = 3
+    dummy_play(npl)

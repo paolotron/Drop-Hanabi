@@ -11,14 +11,13 @@ class GenericSensor(ABC):
     """
     Abstract Class that must be inherited for creating a new sensor
     """
-    out_size = 1
 
     def __init__(self, out_size: int):
         """
         Constructor for Generic Sensor
         @param out_size: length of the outputted bit_string
         """
-        out_size = out_size
+        self.out_size = out_size
 
     def get_out_size(self):
         return self.out_size
@@ -31,6 +30,11 @@ class GenericSensor(ABC):
         @return: bool array of 'self.out_size' length
         """
         pass
+
+    def get_activate(self, knowledge_map: KnowledgeMap):
+        res = self.activate(knowledge_map)
+        assert res.size == self.out_size
+        return res
 
 
 class DiscardKnowSensor(GenericSensor):
@@ -133,9 +137,9 @@ class HintColorToPlaySensor(GenericSensor):
 class HintToDiscardSensor(GenericSensor):
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
-            super().__init__(5*(n_player-1))
+            super().__init__(10*(n_player-1))
         else:
-            super().__init__(4*(n_player-1))
+            super().__init__(8*(n_player-1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -154,6 +158,9 @@ def package_sensors(n_player: int):
             HintColorToPlaySensor(n_player),
             HintToDiscardSensor(n_player)]
 
+def get_sensor_len(n_player: int):
+    return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
+
 
 def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int:
     """
@@ -164,10 +171,12 @@ def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int
     p = []
     for color in table_cards.keys():
         index = Color.fromstr(color)
-        if len(table_cards[color]) < 5:
-            p.append(probability[index][table_cards[color][-1].value])
+        if len(table_cards[color]) == 0:
+            p.append(probability[index.value][0])
+        elif 0 < len(table_cards[color]) < 5:
+            p.append(probability[index.value][table_cards[color][-1].value])
         for card in table_cards[color]:
-            if probability[index][card.value] == 1:
+            if probability[index.value][card.value] == 1:
                 # discard
                 return -1
     if any([x >= 1 for x in p]):
@@ -254,7 +263,7 @@ def __can_be_played(card, table_cards: Dict[str, List]) -> bool:
 
 def __hint_type(knowledge: ArrayLike, card) -> int:
     """
-    return information about card on the end of a player
+    return information about card on the hand of a player
     @param knowledge: matrix 5x5
     @param card: card
     @return -1 if player doesn't know anything about the card
@@ -281,14 +290,7 @@ def __hint_type(knowledge: ArrayLike, card) -> int:
     return -1
 
 
-def check_card(col: Color, hand: List, table_cards: Dict[str, List]):
-    ret_val = False
-    for card in hand:
-        if card.color == col and __can_be_played(card, table_cards):
-            ret_val = True
-        if card.value == col and not __can_be_played(card, table_cards):
-            return False
-    return ret_val
+
 
 
 def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
@@ -298,10 +300,21 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     @return list of booleans
     """
 
+    def check_number(col: int, hand: List, table_cards: Dict[str, List]):
+        ret_val = False
+        for card in hand:
+            if card.value == col and __can_be_played(card, table_cards):
+                ret_val = True
+            if card.value == col and not __can_be_played(card, table_cards):
+                return False
+        return ret_val
+
     ret = []
     for player in knowledge_map.getPlayerList():
+        if player == knowledge_map.getPlayerName():
+            continue
         for i in range(1, 6):
-            val = check_card(i, player.hand, knowledge_map.getTableCards())
+            val = check_number(i, knowledge_map.hands[player], knowledge_map.getTableCards())
             ret.append(val)
 
     return ret
@@ -314,12 +327,23 @@ def hint_color(knowledge_map: KnowledgeMap):
     @return list of booleans
     """
 
+    def check_color(col: str, hand: List, table_cards: Dict[str, List]):
+        ret_val = False
+        for card in hand:
+            if card.color == col and __can_be_played(card, table_cards):
+                ret_val = True
+            if card.color == col and not __can_be_played(card, table_cards):
+                return False
+        return ret_val
+
     ret = []
     for player in knowledge_map.getPlayerList():
+        if player == knowledge_map.getPlayerName():
+            continue
         for color in Color:
             if color == Color.UNKNOWN:
                 continue
-            val = check_card(color, player.hand, knowledge_map.getTableCards())
+            val = check_color(Color.fromint(color.value), knowledge_map.hands[player], knowledge_map.getTableCards())
             ret.append(val)
 
     return ret
@@ -341,12 +365,14 @@ def hint_discard(knowledge_map: KnowledgeMap):
     def color_can_be_discarded(c: str, table_cards: Dict[str, List]) -> bool:
         return len(table_cards[c]) == 5
 
-    ret = [False] * 10 * len(knowledge_map.getPlayerList())
+    ret = [False] * 10 * (len(knowledge_map.getPlayerList()) - 1)
     j = 0
     for player in knowledge_map.getPlayerList():
-        for card in player.hand:
+        if player == knowledge_map.getPlayerName():
+            continue
+        for card in knowledge_map.hands[player]:
             ret[j + card.value - 1] = number_can_be_discarded(card.value, knowledge_map.getTableCards())
-            ret[j + 5 + Color.fromstr(card.color)] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
+            ret[j + 5 + Color.fromstr(card.color).value] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
         j += 10
 
     return ret

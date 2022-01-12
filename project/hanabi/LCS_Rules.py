@@ -7,10 +7,9 @@ from numpy import uint8
 
 @dataclass
 class RuleSet:
-    match_string: NDArray[uint8]
-    dont_care: NDArray[uint8]
-    action: NDArray[uint8]
-    padding: int
+    match_string: NDArray[bool]
+    dont_care: NDArray[bool]
+    action: NDArray[bool]
 
     @staticmethod
     def unpack_rules(rule_array: NDArray[uint8], rule_length: int):
@@ -23,11 +22,10 @@ class RuleSet:
         @param rule_length: length of the actions
         @return: RuleSet
         """
-        cutoff = rule_length // 8 + 1
+        cutoff = rule_length
         return RuleSet(rule_array[:, :cutoff],
                        rule_array[:, cutoff:2 * cutoff],
-                       rule_array[:, 2 * cutoff:],
-                       rule_length % 8)
+                       rule_array[:, 2 * cutoff:])
 
     @staticmethod
     def empty_rules(rule_length: int, action_length: int):
@@ -37,10 +35,9 @@ class RuleSet:
         @param action_length: length of the actions
         @return: RuleSet
         """
-        return RuleSet(np.ndarray(shape=(1, rule_length // 8 + 1), dtype=uint8),
-                       np.ndarray(shape=(1, rule_length // 8 + 1), dtype=uint8),
-                       np.ndarray(shape=(1, action_length // 8 + 1), dtype=uint8),
-                       rule_length % 8)
+        return RuleSet(np.ndarray(shape=(1, rule_length), dtype=bool),
+                       np.ndarray(shape=(1, rule_length), dtype=bool),
+                       np.ndarray(shape=(1, action_length), dtype=bool),)
 
     @staticmethod
     def random_rule_set(rule_length: int, action_length: int, number_of_rules: int):
@@ -51,10 +48,16 @@ class RuleSet:
         @param number_of_rules: ibt
         @return: RuleSet
         """
-        dont_care = ~np.packbits(np.random.randint(0, 1, (number_of_rules, rule_length)), axis=1)
-        match_string = np.packbits(np.random.randint(0, 1, (number_of_rules, rule_length)), axis=1)
-        action_string = np.packbits(np.random.randint(0, 1, (number_of_rules, action_length)), axis=1)
-        return RuleSet(dont_care, match_string, action_string, rule_length % 8)
+        dont_care = np.random.choice(a=[False, True], size=(number_of_rules, rule_length))
+        match_string = np.random.choice(a=[False, True], size=(number_of_rules, rule_length))
+        action_string = np.random.choice(a=[False, True], size=(number_of_rules, action_length))
+        return RuleSet(dont_care, match_string, action_string)
+
+    @staticmethod
+    def create_rule_set(rule_match: NDArray[bool], dont_care: NDArray[bool], action: NDArray[bool]):
+        assert rule_match.shape == dont_care.shape
+        assert rule_match.shape[0] == action.shape[0]
+        return RuleSet(rule_match, dont_care, action)
 
     def cover(self, situation: NDArray[uint8]) -> None:
         """
@@ -62,11 +65,11 @@ class RuleSet:
         @param situation: sensor array
         @return: None
         """
-        dont_care = ~np.packbits(np.random.randint(0, 256, (1, self.match_string.shape[1] * 8), dtype=uint8), axis=1)
-        action = ~np.packbits(np.random.randint(0, 256, (1, self.action.shape[1] * 8), dtype=uint8), axis=1)
-        self.match_string = np.vstack([situation, self.match_string])
-        self.dont_care = np.vstack([dont_care, self.dont_care])
-        self.action = np.vstack([action, self.action])
+        dont_care = np.random.choice(a=[False, True], size=(1, self.match_string.shape[1]))
+        action = np.random.choice(a=[False, True], size=(1, self.action.shape[1]))
+        self.match_string = np.vstack([self.match_string, situation])
+        self.dont_care = np.vstack([self.dont_care, dont_care])
+        self.action = np.vstack([self.action, action])
 
     def match(self, situation: NDArray[uint8]) -> NDArray[np.bool_]:
         """
@@ -74,7 +77,7 @@ class RuleSet:
         @param situation: sensor array
         @return: bool array of matched rules
         """
-        return np.all((self.dont_care | (~(self.match_string ^ situation))) == 255, axis=1)
+        return np.all((self.dont_care | (~(self.match_string ^ situation))), axis=1)
 
     def get_action(self, index: int) -> NDArray[uint8]:
         """
@@ -94,6 +97,17 @@ class RuleSet:
         """
         return np.hstack([self.match_string, self.dont_care, self.action])
 
+@dataclass
+class EndResult:
+    """
+    @rule_match: bool matrix with n_rules columns and n_turns rows, True if rule was matcherd
+    @critical_rules: array with n_rules size, True if rule casued fatal crash
+    @rule_usage: list ints that list the indexes of activated rules
+    """
+    rule_match: NDArray
+    critical_rules: NDArray
+    rule_usage: List[int]
+
 
 class LCSRules:
     """
@@ -101,7 +115,7 @@ class LCSRules:
     implements the matching and covering phase
     """
 
-    def __init__(self, sensor_list: List, rule: RuleSet, action_length: int):
+    def __init__(self, sensor_list: List, action_length: int, rule: RuleSet = None):
         """
         Initialization method
         @param sensor_list: List of Sensors that must inherit from GenericSensor,
@@ -110,10 +124,14 @@ class LCSRules:
         @param action_length: Length of the action string
         """
         self.__sensor_list = sensor_list
-        self.__sensor_size = sum(map(lambda x: x.out_size, sensor_list))
-        self.__rule = rule
+        self.__sensor_size = sum(map(lambda x: x.get_out_size(), sensor_list))
+        if rule is None:
+            self.__rule = RuleSet.empty_rules(self.__sensor_size, action_length)
+        else:
+            self.__rule = rule
         self.__rule_use = []
-        self.__rule_match = []
+        self.__rule_match = np.zeros((self.__rule.action.shape[0], 1), dtype=bool)
+        self.__critical_rules = np.zeros(self.__rule.action.shape[0], dtype=bool)
         self.__action_length = action_length
 
     def act(self, environment) -> NDArray[np.bool_]:
@@ -124,25 +142,27 @@ class LCSRules:
         """
         sensor_activation = self.__detect(environment)
         rule_activation = self.__match(sensor_activation)
-        self.__rule_match.append(rule_activation)
+        rule_activation *= ~self.__critical_rules
+        self.__rule_match = np.vstack([self.__rule_match, rule_activation.reshape(1, -1)])
         if np.sum(rule_activation) == 0:
-            choice = self.__cover(sensor_activation)
-        else:
-            choice = np.random.choice(np.argwhere(rule_activation).reshape((-1,)))
+            self.__cover(sensor_activation)
+            rule_activation = self.__match(sensor_activation)
+            self.__rule_match = np.vstack([self.__rule_match, rule_activation])
+
+        choice = np.random.choice(np.argwhere(rule_activation).reshape((-1,)))
         self.__rule_use.append(choice)
-        action = np.unpackbits(self.__rule.get_action(choice))
+        action = self.__rule.get_action(choice - 1)
         return action[:self.__action_length]
 
-    def end_game_data(self) -> Tuple[NDArray, NDArray]:
+    def end_game_data(self) -> EndResult:
         """
         Post-mortem data of usage of the rules,
-        returns a bool matrix that represents the matched rules at each game step
-        and a vector with the index of the rule that was actually used
-        @return: array GameLength x NRules, array GameLength
+        returns EndResult struct
         """
-        rule_matching_data = np.vstack(self.__rule_match)
-        rule_usage_data = np.array(self.__rule_use)
-        return rule_matching_data, rule_usage_data
+        return EndResult(self.__rule_match, self.__critical_rules, self.__rule_use)
+
+    def signal_critical_failure(self):
+        self.__critical_rules[self.__rule_use[-1]] = True
 
     def get_rule_set(self) -> RuleSet:
         """
@@ -157,8 +177,8 @@ class LCSRules:
         @param environment: input of Sensors
         @return: np.ndarray
         """
-        actions = [sensor.activate(environment).astype(np.bool_) for sensor in self.__sensor_list]
-        return np.packbits(np.hstack(actions))
+        actions = [sensor.get_activate(environment).astype(np.bool_) for sensor in self.__sensor_list]
+        return np.hstack(actions)
 
     def __match(self, sensor_activation: NDArray[uint8]) -> NDArray[uint8]:
         """
@@ -168,13 +188,15 @@ class LCSRules:
         """
         return self.__rule.match(sensor_activation)
 
-    def __cover(self, sensor_activation: NDArray[uint8]) -> NDArray[uint8]:
+    def __cover(self, sensor_activation: NDArray[uint8]):
         """
         add a new random to cover for an unmatched situation
         @param sensor_activation:
         @return:
         """
         self.__rule.cover(sensor_activation)
-        self.__rule_use = np.append(self.__rule_use, 1)
-        self.__rule_match = np.append(self.__rule_use, 1)
-        return self.__rule_match.size - 1
+        self.__rule_match = np.hstack([self.__rule_match, np.zeros((self.__rule_match.shape[0], 1))])
+        self.__critical_rules = np.append(self.__critical_rules, False)
+        # self.__rule_use.append(1)
+        # self.__rule_match = np.append(self.__rule_use, 1)
+        return len(self.__rule_match) - 1
