@@ -256,7 +256,7 @@ def __can_be_played(card, table_cards: Dict[str, List]) -> bool:
 
 def __hint_type(knowledge: ArrayLike, card) -> int:
     """
-    return information about card on the end of a player
+    return information about card on the hand of a player
     @param knowledge: matrix 5x5
     @param card: card
     @return -1 if player doesn't know anything about the card
