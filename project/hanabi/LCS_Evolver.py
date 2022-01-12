@@ -43,6 +43,6 @@ if __name__ == '__main__':
     server = Thread(target=server.start_server, args=[n_players])
     server.start()
     players = [LCSPlayer(name=f'LCS{i}') for i in range(n_players)]
-
+    dummy_play()
 
 
