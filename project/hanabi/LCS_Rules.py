@@ -101,7 +101,7 @@ class LCSRules:
     implements the matching and covering phase
     """
 
-    def __init__(self, sensor_list: List, rule: RuleSet, action_length: int):
+    def __init__(self, sensor_list: List, action_length: int, rule: RuleSet = None):
         """
         Initialization method
         @param sensor_list: List of Sensors that must inherit from GenericSensor,
@@ -111,7 +111,10 @@ class LCSRules:
         """
         self.__sensor_list = sensor_list
         self.__sensor_size = sum(map(lambda x: x.out_size, sensor_list))
-        self.__rule = rule
+        if rule is None:
+            self.__rule = RuleSet.empty_rules(self.__sensor_size, action_length)
+        else:
+            self.__rule = rule
         self.__rule_use = []
         self.__rule_match = []
         self.__action_length = action_length

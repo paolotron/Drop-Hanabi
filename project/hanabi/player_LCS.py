@@ -1,22 +1,22 @@
-from GameAdapter import GameAdapter, Player
+from GameAdapter import Player
 from LCS_Actor import LCSActor
 from LCS_Rules import LCSRules
 
 
 class LCSPlayer(Player):
 
-    def __init__(self, name, rules: LCSRules):
+    def __init__(self, name):
         super().__init__(name)
-        self.rules = rules
+        self.rules = None
         self.actor = None
 
-    def setup(self):
+    def setup(self, rules: LCSRules):
+        self.rules = rules
         self.actor = LCSActor(self.io)
 
     def make_action(self, state):
-        self.io.send_play_card(0)
-        # act_string = self.rules.act(state)
-        # self.actor.act(act_string)
+        act_string = self.rules.act(state)
+        self.actor.act(act_string)
 
 
 
