@@ -16,6 +16,11 @@ class Color(Enum):
 		dic = {"red": Color.RED, "blue": Color.BLUE, "green": Color.GREEN, "yellow": Color.YELLOW, "white": Color.WHITE}
 		return dic[string]
 
+	@staticmethod
+	def fromint(number: int):
+		dic = {0: "red", 1: "blue", 2: "green", 3: "yellow", 4: "white"}
+		return dic[number]
+
 
 class KnowledgeMap:
 	"""

@@ -283,14 +283,7 @@ def __hint_type(knowledge: ArrayLike, card) -> int:
     return -1
 
 
-def check_card(col: Color, hand: List, table_cards: Dict[str, List]):
-    ret_val = False
-    for card in hand:
-        if card.color == col and __can_be_played(card, table_cards):
-            ret_val = True
-        if card.value == col and not __can_be_played(card, table_cards):
-            return False
-    return ret_val
+
 
 
 def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
@@ -300,10 +293,21 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     @return list of booleans
     """
 
+    def check_number(col: int, hand: List, table_cards: Dict[str, List]):
+        ret_val = False
+        for card in hand:
+            if card.value == col and __can_be_played(card, table_cards):
+                ret_val = True
+            if card.value == col and not __can_be_played(card, table_cards):
+                return False
+        return ret_val
+
     ret = []
     for player in knowledge_map.getPlayerList():
+        if player == knowledge_map.getPlayerName():
+            continue
         for i in range(1, 6):
-            val = check_card(i, knowledge_map.hands[player], knowledge_map.getTableCards())
+            val = check_number(i, knowledge_map.hands[player], knowledge_map.getTableCards())
             ret.append(val)
 
     return ret
@@ -316,12 +320,23 @@ def hint_color(knowledge_map: KnowledgeMap):
     @return list of booleans
     """
 
+    def check_color(col: str, hand: List, table_cards: Dict[str, List]):
+        ret_val = False
+        for card in hand:
+            if card.color == col and __can_be_played(card, table_cards):
+                ret_val = True
+            if card.color == col and not __can_be_played(card, table_cards):
+                return False
+        return ret_val
+
     ret = []
     for player in knowledge_map.getPlayerList():
+        if player == knowledge_map.getPlayerName():
+            continue
         for color in Color:
             if color == Color.UNKNOWN:
                 continue
-            val = check_card(color.value, knowledge_map.hands[player], knowledge_map.getTableCards())
+            val = check_color(Color.fromint(color.value), knowledge_map.hands[player], knowledge_map.getTableCards())
             ret.append(val)
 
     return ret
@@ -343,9 +358,11 @@ def hint_discard(knowledge_map: KnowledgeMap):
     def color_can_be_discarded(c: str, table_cards: Dict[str, List]) -> bool:
         return len(table_cards[c]) == 5
 
-    ret = [False] * 10 * len(knowledge_map.getPlayerList())
+    ret = [False] * 10 * (len(knowledge_map.getPlayerList()) - 1)
     j = 0
     for player in knowledge_map.getPlayerList():
+        if player == knowledge_map.getPlayerName():
+            continue
         for card in knowledge_map.hands[player]:
             ret[j + card.value - 1] = number_can_be_discarded(card.value, knowledge_map.getTableCards())
             ret[j + 5 + Color.fromstr(card.color).value] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
