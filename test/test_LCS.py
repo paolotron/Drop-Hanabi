@@ -3,9 +3,9 @@ import numpy as np
 from numpy import bool_
 from numpy.typing import NDArray
 
-from project.hanabi.LCS_Rules import RuleSet
-from project.hanabi.LCS_Rules import LCSRules
-from project.hanabi.LCS_Sensor import GenericSensor
+from project.hanabi.LCS import RuleSet
+from project.hanabi.LCS import LCSRules
+from project.hanabi.LCS import GenericSensor
 
 
 def get_default_rule_set():

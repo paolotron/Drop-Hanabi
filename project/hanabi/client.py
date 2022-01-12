@@ -11,7 +11,7 @@ import os
 if len(argv) < 4:
     print("You need the player name to start the game.")
     #exit(-1)
-    playerName = argv[1] # For debug
+    playerName = "Test" # For debug
     ip = HOST
     port = PORT
 else:
@@ -26,7 +26,6 @@ statuses = ["Lobby", "Game", "GameHint"]
 status = statuses[0]
 
 hintState = ("", "")
-
 
 def manageInput():
     global run
@@ -84,7 +83,6 @@ def manageInput():
             print("Unknown command: " + command)
             continue
         stdout.flush()
-
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     request = GameData.ClientPlayerAddData(playerName)
