@@ -11,14 +11,13 @@ class GenericSensor(ABC):
     """
     Abstract Class that must be inherited for creating a new sensor
     """
-    out_size = 1
 
     def __init__(self, out_size: int):
         """
         Constructor for Generic Sensor
         @param out_size: length of the outputted bit_string
         """
-        out_size = out_size
+        self.out_size = out_size
 
     def get_out_size(self):
         return self.out_size
@@ -31,6 +30,11 @@ class GenericSensor(ABC):
         @return: bool array of 'self.out_size' length
         """
         pass
+
+    def get_activate(self, knowledge_map: KnowledgeMap):
+        res = self.activate(knowledge_map)
+        assert res.size == self.out_size
+        return res
 
 
 class DiscardKnowSensor(GenericSensor):
@@ -133,9 +137,9 @@ class HintColorToPlaySensor(GenericSensor):
 class HintToDiscardSensor(GenericSensor):
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
-            super().__init__(5*(n_player-1))
+            super().__init__(10*(n_player-1))
         else:
-            super().__init__(4*(n_player-1))
+            super().__init__(8*(n_player-1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -153,6 +157,9 @@ def package_sensors(n_player: int):
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
             HintToDiscardSensor(n_player)]
+
+def get_sensor_len(n_player: int):
+    return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
 
 
 def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int:

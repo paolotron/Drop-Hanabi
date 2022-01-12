@@ -23,7 +23,7 @@ status = statuses[0]
 
 commandQueue = {}
 numPlayers = 2
-
+hideprints = True
 
 def manageConnection(conn: socket, addr):
     global status
@@ -134,9 +134,9 @@ def start_server(nplayers):
     numPlayers = nplayers
     logging.basicConfig(filename="game.log", level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s',
                         datefmt="%m/%d/%Y %I:%M:%S %p")
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    logging.getLogger().addHandler(logging.FileHandler("./game.log"))
     threading.Thread(target=manageNetwork).start()
-    manageInput()
+    # manageInput()
 
 
 if __name__ == '__main__':

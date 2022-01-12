@@ -207,7 +207,7 @@ class Game(object):
 
     # Show request
     def __satisfyShowCardRequest(self, data: GameData.ClientGetGameStateRequest):
-        logging.info("Showing hand to: " + data.sender)
+        # logging.info("Showing hand to: " + data.sender)
         currentPlayer, playerList = self.__getPlayersStatus(data.sender)
         return (GameData.ServerGameStateData(currentPlayer, playerList, self.__noteTokens, self.__stormTokens, self.__tableCards, self.__discardPile), None)
 

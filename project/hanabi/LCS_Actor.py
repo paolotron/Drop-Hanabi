@@ -35,7 +35,7 @@ class LCSActor:
     def get_action_length():
         return 6
 
-    def act(self, act_string: NDArray) -> None:
+    def act(self, act_string: NDArray) -> bool:
         """
         Calls GameAdapter's functions
         @param act_string: np.ndarray[bool] len = 6
@@ -52,11 +52,15 @@ class LCSActor:
             pow += 1
 
         index = index % self.max_index
+        res = False
 
         if 0 <= index < self.num_cards:
-            self.io.send_play_card(self.paramDict[index])
+            res = self.io.send_play_card(self.paramDict[index])
         elif self.num_cards <= index < self.num_cards * 2:
-            self.io.send_discard_card(self.paramDict[index])
+            res = self.io.send_discard_card(self.paramDict[index])
         else:
-            self.io.send_hint(*self.paramDict[index])
+            res = self.io.send_hint(*self.paramDict[index])
+
+        return res
+
 
