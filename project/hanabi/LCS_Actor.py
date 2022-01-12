@@ -51,6 +51,12 @@ class LCSActor:
             index += num * (2 ^ pow)
             pow += 1
 
-        if index == 3:
-            index = np.randint(0, 3)
+        index = index % self.max_index
+
+        if 0 <= index < self.num_cards:
+            self.io.send_play_card(self.paramDict[index])
+        elif self.num_cards <= index < self.num_cards * 2:
+            self.io.send_discard_card(self.paramDict[index])
+        else:
+            self.io.send_hint(*self.paramDict[index])
 
