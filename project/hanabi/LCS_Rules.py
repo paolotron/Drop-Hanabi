@@ -148,11 +148,12 @@ class LCSRules:
             self.__cover(sensor_activation)
             rule_activation = self.__match(sensor_activation)
             self.__rule_match = np.vstack([self.__rule_match, rule_activation])
+            rule_activation *= ~self.__critical_rules
 
         choice = np.random.choice(np.argwhere(rule_activation).reshape((-1,)))
         self.__rule_use.append(choice)
         action = self.__rule.get_action(choice - 1)
-        return action[:self.__action_length]
+        return action
 
     def end_game_data(self) -> EndResult:
         """

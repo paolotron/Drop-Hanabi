@@ -53,14 +53,12 @@ class LCSActor:
 
         index = index % self.max_index
         res = False
-
         if 0 <= index < self.num_cards:
             res = self.io.send_play_card(self.paramDict[index])
         elif self.num_cards <= index < self.num_cards * 2:
             res = self.io.send_discard_card(self.paramDict[index])
         else:
             res = self.io.send_hint(*self.paramDict[index])
-
         return res
 
 

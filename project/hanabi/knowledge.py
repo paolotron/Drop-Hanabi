@@ -54,7 +54,7 @@ class KnowledgeMap:
 								[3, 2, 2, 2, 1],
 								[3, 2, 2, 2, 1]])
 		self.numMoves = 0
-		self.tableCards = []
+		self.tableCards = {}
 		self.discardPile = []
 		self.usedNoteTokens = 0
 		self.usedStormTokens = 0
@@ -116,6 +116,7 @@ class KnowledgeMap:
 		self.numMoves = len(move_history)
 
 	def getProbabilityMatrix(self, target, probability=True):
+		eps = 1e-6
 		"""
 			Compute probability matrix for each card in the target plater's hand
 			@param target: the player name (string) you want to inspect
@@ -131,7 +132,7 @@ class KnowledgeMap:
 				for card in self.hands[player]:
 					tmpMatrix[Color.fromstr(card.color).value, card.value - 1] -= 1
 		if probability:
-			return [tmpMatrix * m / (tmpMatrix * m).sum() for m in self.hints[target]]
+			return [tmpMatrix * m / (tmpMatrix * m + eps).sum() for m in self.hints[target]]
 		else:
 			return [tmpMatrix * m for m in self.hints[target]]
 

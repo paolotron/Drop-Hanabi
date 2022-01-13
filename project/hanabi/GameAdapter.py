@@ -16,6 +16,14 @@ class HintType(Enum):
     COLOR = 1
 
 
+verbose = False
+verbose_min = False
+
+
+class EndGameException(Exception):
+    pass
+
+
 # noinspection PyTypeChecker
 class GameAdapter:
     """
@@ -49,8 +57,9 @@ class GameAdapter:
                 time.sleep(0.001)
         self.socket.send(GameData.ClientPlayerAddData(name).serialize())
         assert type(GameData.GameData.deserialize(self.socket.recv(datasize))) is GameData.ServerPlayerConnectionOk
-        print("Connection accepted by the server. Welcome " + name)
-        print("[" + name + " - " + "Lobby" + "]: ", end="")
+        if verbose:
+            print("Connection accepted by the server. Welcome " + name)
+            print("[" + name + " - " + "Lobby" + "]: ", end="")
         self.socket.send(GameData.ClientPlayerStartRequest(name).serialize())
         data = GameData.GameData.deserialize(self.socket.recv(datasize))
         assert type(data) is GameData.ServerPlayerStartRequestAccepted
@@ -67,11 +76,17 @@ class GameAdapter:
         Request Board State
         """
         data = GameData.ClientGetGameStateRequest(self.name)
+        # print(f"{self.name} SENDING STATE REQUEST")
         self.socket.send(data.serialize())
+        if verbose_min:
+            print(f"{self.name}: OPEN")
         while True:
+
             request = GameData.GameData.deserialize(self.socket.recv(self.datasize))
             t = self._register_action(request)
-            if t is GameData.ServerGameStateData:
+            if type(t) is GameData.ServerGameStateData or self.game_end:
+                if verbose_min:
+                    print(f"{self.name}: CLOSE {type(request)} : {self.board_state.currentPlayer}")
                 break
 
     def __iter__(self):
@@ -93,14 +108,16 @@ class GameAdapter:
 
         try:
             self._request_state()
-        except ConnectionResetError:
+        except (ConnectionResetError, EndGameException) as e:
             raise StopIteration
         while self.board_state.currentPlayer != self.name:
             try:
+                if self.game_end:
+                    raise StopIteration
                 response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
                 self._register_action(response)
                 self._request_state()
-            except ConnectionResetError:
+            except (ConnectionResetError, EndGameException) as e:
                 raise StopIteration
         self.knowledgeMap.updateHands(self.move_history, self.board_state)
         return self.knowledgeMap
@@ -109,18 +126,16 @@ class GameAdapter:
         """
         send action to the socket
         @param action: GameData
-        @return: GameData
         """
+        if verbose:
+            print(f"{self.name} SENDING ACTION {action}")
         self.socket.send(action.serialize())
-        try:
-            response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
-        except ConnectionResetError:
-            raise StopIteration
-        self._register_action(response)
-        return response
+        # self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
+        # response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
 
     def _register_action(self, response: GameData.ServerToClientData):
-
+        if verbose:
+            print(f"{self.name}: RECIEVED {response}")
         if type(response) is GameData.ServerGameStateData:
             response: GameData.ServerGameStateData
             self.board_state = response
@@ -135,12 +150,10 @@ class GameAdapter:
             self.move_history.append(response)
         elif type(response) is GameData.ServerGameOver:
             self.game_end = True
-            raise StopIteration
-        elif type(response) is GameData.ServerStartGameData:
-            self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
-        elif type(response) is GameData.ServerInvalidDataReceived:
+            raise EndGameException()
+        elif type(response) is GameData.ServerInvalidDataReceived and verbose:
             print(f"{self.name} TURN: {type(response)}, data: {response.data}")
-        return type(response)
+        return response
 
     def reset(self):
         self.move_history = []
@@ -165,6 +178,16 @@ class GameAdapter:
         p.remove(self.name)
         return tuple(p)
 
+    def _wait_for(self, message_types):
+        response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
+        while type(response) not in message_types and not self.game_end:
+            if verbose:
+                print(f"{self.name} WAITING FOR {message_types}, RECIEVED {type(response)}")
+            self._register_action(response)
+            response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
+        self._register_action(response)
+        return response
+
     def send_hint(self, player: Union[str, int], type_h: HintType, val: Union[str, int]) -> bool:
         """
         Send a hint to a specific player
@@ -173,15 +196,18 @@ class GameAdapter:
         @param val: value or colour
         @return: True if the hint was sent successfully
         """
+        # print(f"{self.name} is HINTING")
         type_h = {HintType.NUMBER: 'value', HintType.COLOR: 'colour'}[type_h]
         try:
-            result = self._send_action(GameData.ClientHintData(self.name, player, type_h, val))
-        except StopIteration:
+            self._send_action(GameData.ClientHintData(self.name, player, type_h, val))
+            result = self._wait_for(
+                [GameData.ServerActionInvalid, GameData.ServerInvalidDataReceived, GameData.ServerHintData])
+        except (ConnectionResetError, EndGameException) as e:
             return True
 
-        if type(result) in [GameData.ServerActionInvalid, GameData.ServerInvalidDataReceived]:
+        if type(result) in [GameData.ServerActionInvalid, GameData.ServerInvalidDataReceived, GameData.ServerGameOver]:
             return False
-        if type(result) is GameData.ServerHintData:
+        if type(result) in [GameData.ServerHintData, GameData.ServerGameOver]:
             return True
         raise ValueError
 
@@ -191,15 +217,19 @@ class GameAdapter:
         @param card_number: index of the card
         @return: True if the card was correct False otherwise
         """
+        # print(f"{self.name} is PLAYING")
         try:
-            result = self._send_action(GameData.ClientPlayerPlayCardRequest(self.name, card_number))
-        except StopIteration:
+            self._send_action(GameData.ClientPlayerPlayCardRequest(self.name, card_number))
+            result = self._wait_for([GameData.ServerActionInvalid,
+                                     GameData.ServerInvalidDataReceived,
+                                     GameData.ServerPlayerThunderStrike,
+                                     GameData.ServerPlayerMoveOk])
+        except (ConnectionResetError, EndGameException) as e:
             return True
-
-        if type(result) is GameData.ServerPlayerMoveOk:
+        if type(result) in [GameData.ServerPlayerMoveOk, GameData.ServerPlayerThunderStrike, GameData.ServerGameOver]:
             return True
-        if type(result) is GameData.ServerPlayerThunderStrike:
-            return True
+        if type(result) in [GameData.ServerInvalidDataReceived, GameData.ServerActionInvalid]:
+            return False
         raise ValueError
 
     def send_discard_card(self, card_number: int) -> bool:
@@ -208,23 +238,25 @@ class GameAdapter:
         @param card_number: card index
         @return: if the card was successfully discarded
         """
+        # print(f"{self.name} is DISCARDING")
         try:
-            result = self._send_action(GameData.ClientPlayerDiscardCardRequest(self.name, card_number))
-        except StopIteration:
+            self._send_action(GameData.ClientPlayerDiscardCardRequest(self.name, card_number))
+            result = self._wait_for([GameData.ServerActionValid, GameData.ServerActionInvalid])
+        except (ConnectionResetError, EndGameException) as e:
             return True
 
-        if type(result) is GameData.ServerActionValid:
+        if type(result) in [GameData.ServerActionValid, GameData.ServerGameOver]:
             return True
         if type(result) is GameData.ServerActionInvalid:
             return False
         raise ValueError
 
     def end_game_data(self):
-        points = sum([max(map(lambda x: x.value, cards), default=0) for cards in self.board_state.tableCards.values()])
+        points = sum([max(map(lambda x: x.value, cards), default=0) for cards in self.knowledgeMap.tableCards.values()])
         return {
             "n_turns": len(self.move_history),
             "points": points,
-            "loss": self.board_state.usedStormTokens == 2
+            "loss": self.knowledgeMap.usedStormTokens == 2
         }
 
 

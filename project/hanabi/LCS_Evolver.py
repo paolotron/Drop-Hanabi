@@ -1,8 +1,5 @@
-from typing import List, Union
-import os
-import time
-from threading import Thread, Semaphore
-import numpy as np
+from typing import List
+from threading import Thread
 
 from LCS_Rules import LCSRules, RuleSet
 from LCS_Actor import LCSActor
@@ -22,6 +19,7 @@ class Evolver:
         # sto metodo mi ritorna altri ruleSet
         pass
 
+
 class GameManager:
 
     def __init__(self, n_players):
@@ -35,10 +33,13 @@ class GameManager:
         [t.start() for t in threads]
         [t.join() for t in threads]
         results = [player.io.end_game_data() for player in self.players]
-        return results
+        res = {
+            "n_turns": max(map(lambda x: x["n_turns"], results)),
+            "points": max(map(lambda x: x["points"], results)),
+            "loss": max(map(lambda x: x["loss"], results))
+        }
 
-    def close(self):
-        self.serv.join()
+        return res
 
 
 def dummy_play(n_players):
@@ -47,8 +48,11 @@ def dummy_play(n_players):
         rules = [LCSRules(sens.package_sensors(n_players), LCSActor.get_action_length()) for _ in range(n_players)]
         j = man.get_fitness(rules)
         res = [rule.end_game_data() for rule in rules]
-    return
+        if i % 10 == 0:
+            print(i)
+
 
 if __name__ == '__main__':
-    npl = 3
+    npl = 2
     dummy_play(npl)
+    print("UBER END")
