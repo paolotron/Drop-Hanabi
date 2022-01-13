@@ -427,7 +427,7 @@ class Game(object):
             score = 0
             for pile in self.__tableCards:
                 score += len(self.__tableCards[pile]) #! BUGFIX # instead of 'len(pile)' --> 'pile' is the key (eg. 'red')
-            print('Score: ' + str(score))
+            #print('Score: ' + str(score))
             return True, score
         return False, 0
     

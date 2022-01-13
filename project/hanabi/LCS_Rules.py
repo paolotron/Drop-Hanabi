@@ -130,7 +130,7 @@ class LCSRules:
         else:
             self.__rule = rule
         self.__rule_use = []
-        self.__rule_match = np.zeros((self.__rule.action.shape[0], 1), dtype=bool)
+        self.__rule_match = np.zeros((1, self.__rule.action.shape[0]), dtype=bool)
         self.__critical_rules = np.zeros(self.__rule.action.shape[0], dtype=bool)
         self.__action_length = action_length
 

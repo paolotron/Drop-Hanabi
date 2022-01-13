@@ -130,9 +130,9 @@ def manageInput():
             os._exit(0)
 
 
-def manageNetwork():
+def manageNetwork(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
+        s.bind((HOST, port))
         logging.info("Hanabi server started on " + HOST + ":" + str(PORT))
         while True:
             s.listen()
@@ -141,13 +141,13 @@ def manageNetwork():
                              args=(conn, addr)).start()
 
 
-def start_server(nplayers):
+def start_server(nplayers, port):
     global numPlayers
     numPlayers = nplayers
     logging.basicConfig(filename="game.log", level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s',
                         datefmt="%m/%d/%Y %I:%M:%S %p")
     logging.getLogger().addHandler(logging.FileHandler("game.log"))
-    threading.Thread(target=manageNetwork).start()
+    threading.Thread(target=manageNetwork, args=[port]).start()
     #manageInput()
 
 
