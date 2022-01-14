@@ -82,17 +82,18 @@ class SurePlaySensor(GenericSensor):
 
 
 class RiskyPlaySensor(GenericSensor):
-    def __init__(self, n_player: int):
+    def __init__(self, n_player: int, probability=0.8):
         if n_player == 2 or n_player == 3:
             super().__init__(5)
         else:
             super().__init__(4)
+        self.probability = probability
 
     def get_out_size(self):
         return super().get_out_size()
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName())))
+        return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()), self.probability))
 
 
 class NoHintLeftSensor(GenericSensor):
@@ -233,15 +234,16 @@ def play_known(my_hand: List[ArrayLike], table_cards: Dict[str, List]) -> List[b
     return ret
 
 
-def play_unknown(my_hand: List[ArrayLike]):
+def play_unknown(my_hand: List[ArrayLike], prob: float):
     """
     return the bitstring that represent which card of the hand are possible play
     @param my_hand: list of matrix 5x5
+    @param prob: float representing the probability accepted
     @return list of booleans
     """
     ret = []
     for i, my_knowledge_matrix in enumerate(my_hand):
-        if np.any(np.sum(my_knowledge_matrix, axis=1)[i] >= 1):
+        if np.any(np.sum(my_knowledge_matrix, axis=1)[i] >= prob):
             ret.append(True)
         else:
             ret.append(False)
