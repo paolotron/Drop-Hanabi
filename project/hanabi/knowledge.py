@@ -86,7 +86,7 @@ class KnowledgeMap:
 	def __updateMatrix(self, move):
 		self.matrix[Color.fromstr(move.card.color).value, move.card.value - 1] -= 1
 		self.hints[move.lastPlayer].pop(move.cardHandIndex)
-		self.hints[move.lastPlayer].append(np.ones((self.numCards, self.numCards), dtype=bool))
+		self.hints[move.lastPlayer].append(np.ones((5, 5), dtype=bool))
 
 	def updateHands(self, move_history, state):
 		"""
@@ -132,7 +132,7 @@ class KnowledgeMap:
 				for card in self.hands[player]:
 					tmpMatrix[Color.fromstr(card.color).value, card.value - 1] -= 1
 		if probability:
-			return [tmpMatrix * m / (tmpMatrix * m + eps).sum() for m in self.hints[target]]
+			return [tmpMatrix * m / (tmpMatrix * m).sum() for m in self.hints[target]]
 		else:
 			return [tmpMatrix * m for m in self.hints[target]]
 
