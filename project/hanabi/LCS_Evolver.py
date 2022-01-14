@@ -68,6 +68,12 @@ def dummy_play(n_players):
 
 
 if __name__ == '__main__':
-    npl = 2
-    dummy_play(npl)
-    print("UBER END")
+    n_players = 5
+    g = GameManager(n_players)
+    r1 = RuleSet.random_rule_set(g.sensor_len(), g.action_len(), 100)
+    r2 = RuleSet.random_rule_set(g.sensor_len(), g.action_len(), 20)
+    r3 = RuleSet.random_rule_set(g.sensor_len(), g.action_len(), 1)
+    r4 = RuleSet.random_rule_set(g.sensor_len(), g.action_len(), 50)
+    r5 = RuleSet.random_rule_set(g.sensor_len(), g.action_len(), 40)
+    res = g.get_fitness([r1, r2, r3, r4, r5])
+    print(res)

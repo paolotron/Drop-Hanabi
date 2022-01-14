@@ -109,10 +109,7 @@ class NoHintLeftSensor(GenericSensor):
 
 class HintNumberToPlaySensor(GenericSensor):
     def __init__(self, n_player: int):
-        if n_player == 2 or n_player == 3:
-            super().__init__(5*(n_player-1))
-        else:
-            super().__init__(4*(n_player-1))
+        super().__init__(5*(n_player-1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -123,10 +120,7 @@ class HintNumberToPlaySensor(GenericSensor):
 
 class HintColorToPlaySensor(GenericSensor):
     def __init__(self, n_player: int):
-        if n_player == 2 or n_player == 3:
-            super().__init__(5*(n_player-1))
-        else:
-            super().__init__(4*(n_player-1))
+        super().__init__(5*(n_player-1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -137,10 +131,7 @@ class HintColorToPlaySensor(GenericSensor):
 
 class HintToDiscardSensor(GenericSensor):
     def __init__(self, n_player: int):
-        if n_player == 2 or n_player == 3:
-            super().__init__(10*(n_player-1))
-        else:
-            super().__init__(8*(n_player-1))
+        super().__init__(10*(n_player-1))
 
     def get_out_size(self):
         return super().get_out_size()
