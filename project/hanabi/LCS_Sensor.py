@@ -168,7 +168,7 @@ def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int
         elif 0 < len(table_cards[color]) < 5:
             p.append(probability[index.value][table_cards[color][-1].value])
         for card in table_cards[color]:
-            if probability[index.value][card.value] == 1:
+            if probability[index.value][card.value-1] == 1:
                 # discard
                 return -1
     if any([x >= 1 for x in p]):
