@@ -39,7 +39,7 @@ class GameManager:
 
     def __init__(self, n_pl):
         self.n_players = n_pl
-        self.serv = Process(target=server.start_server, args=[self.n_players, PORT])
+        self.serv = Process(target=server.start_server, args=(self.n_players, PORT))
         self.serv.daemon = True
         self.serv.start()
         self.players = [LCSPlayer(name=f'LCS{i}') for i in range(self.n_players)]
@@ -51,7 +51,7 @@ class GameManager:
     def sensor_len(self):
         return Sens.get_sensor_len(self.n_players)
 
-    def get_fitness(self, rule_list: List[LCSRules], sensors=None) -> Fitness:
+    def get_fitness(self, rule_list: List[RuleSet], sensors=None) -> List[Fitness]:
         if sensors is None:
             sensors = Sens.package_sensors(self.n_players)
         lcs_rule_list = [LCSRules(sensors, LCSActor.get_action_length(), rule) for rule in rule_list]
@@ -107,7 +107,7 @@ def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.size, p=(1 - p, p))
     packed_rules ^= random_mask
-    return packed_rules
+    return RuleSet.unpack_rules(packed_rules, rule.action_length())
 
 
 def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int = 1):
@@ -223,5 +223,9 @@ if __name__ == '__main__':
     population = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(5)]
     fit = tournament_play(population, g, 2)
     print("")
+    for f in fit:
+        for x in f:
+            print(x)
+        print("*************************")
     g.stop()
     pass
