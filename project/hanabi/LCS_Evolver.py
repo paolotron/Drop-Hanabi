@@ -106,6 +106,8 @@ def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
     """
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.size, p=(1 - p, p))
+    x = packed_rules.shape
+    random_mask = np.reshape(random_mask, x)
     packed_rules ^= random_mask
     return RuleSet.unpack_rules(packed_rules, rule.action_length())
 
