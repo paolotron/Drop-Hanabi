@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Tuple
 import numpy as np
 from numpy.typing import NDArray
@@ -59,6 +59,15 @@ class RuleSet:
         assert rule_match.shape[0] == action.shape[0]
         return RuleSet(rule_match, dont_care, action)
 
+    def sensor_length(self):
+        return self.match_string.shape[1]
+
+    def action_length(self):
+        return self.action.shape[1]
+
+    def number_rules(self):
+        return self.match_string.shape[0]
+
     def cover(self, situation: NDArray[uint8]) -> None:
         """
         Cover for an unknown event
@@ -97,7 +106,8 @@ class RuleSet:
         """
         return np.hstack([self.match_string, self.dont_care, self.action])
 
-@dataclass
+
+@dataclass(repr=False, frozen=True)
 class EndResult:
     """
     @rule_match: bool matrix with n_rules columns and n_turns rows, True if rule was matcherd
@@ -106,7 +116,7 @@ class EndResult:
     """
     rule_match: NDArray
     critical_rules: NDArray
-    rule_usage: List[int]
+    rule_usage: tuple[int]
 
 
 class LCSRules:
@@ -150,7 +160,10 @@ class LCSRules:
             self.__rule_match = np.vstack([self.__rule_match, rule_activation])
             rule_activation *= ~self.__critical_rules
 
-        choice = np.random.choice(np.argwhere(rule_activation).reshape((-1,)))
+        activated_rules = np.argwhere(rule_activation).reshape(-1,)
+        # Choose the more specific rule
+        choice = activated_rules[np.argmin(np.sum(self.__rule.dont_care[activated_rules], axis=1))]
+
         self.__rule_use.append(choice)
         action = self.__rule.get_action(choice - 1)
         return action
