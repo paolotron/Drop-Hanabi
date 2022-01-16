@@ -106,10 +106,9 @@ def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
     """
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.size, p=(1 - p, p))
-    x = packed_rules.shape
-    random_mask = np.reshape(random_mask, x)
+    random_mask = np.reshape(random_mask, packed_rules.shape)
     packed_rules ^= random_mask
-    return RuleSet.unpack_rules(packed_rules, rule.action_length())
+    return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
 
 
 def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int = 1):
@@ -220,14 +219,5 @@ def dummy_play(n_players):
 
 
 if __name__ == '__main__':
-    n_players = 3
-    g = GameManager(n_players)
-    population = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(5)]
-    fit = tournament_play(population, g, 2)
-    print("")
-    for f in fit:
-        for x in f:
-            print(x)
-        print("*************************")
-    g.stop()
+
     pass

@@ -22,10 +22,12 @@ class RuleSet:
         @param rule_length: length of the actions
         @return: RuleSet
         """
-        cutoff = rule_length
-        return RuleSet(rule_array[:, :cutoff],
-                       rule_array[:, cutoff:2 * cutoff],
-                       rule_array[:, 2 * cutoff:])
+        match_string = rule_array[:, :rule_length]
+        dont_care = rule_array[:, rule_length:2 * rule_length]
+        action = rule_array[:, 2 * rule_length:]
+        return RuleSet(match_string,
+                       dont_care,
+                       action)
 
     @staticmethod
     def empty_rules(rule_length: int, action_length: int):
