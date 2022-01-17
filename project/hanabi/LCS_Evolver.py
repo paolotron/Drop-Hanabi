@@ -18,13 +18,24 @@ from player_LCS import LCSPlayer
 
 class Evolver:
 
-    def __init__(self, lcs_rules_list: List[RuleSet]):
-        self.LCS_rules_list = lcs_rules_list
+    def __init__(self, num_players):
+        self.num_players = num_players
+        self.rules_set = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(num_players)]
+        self.gameManager = GameManager(num_players)
 
-    def evolve(self, activations, fitness):
-        # Activations arriva dal metodo EndGameData
+    def evolve(self):
+        results = tournament_play(self.rules_set, self.gameManager, 2)
+        points = np.zeros(self.num_players)
+        for i, player in enumerate(results):
+            tot = 0
+            for fit in player:
+                tot += fit.points
+            points[i] = tot
+        ind = points.argpartition(-2)
+        full_crossover(self.rules_set[ind[0]], self.rules_set[ind[1]])
+
         # sto metodo mi ritorna altri ruleSet
-        pass
+        return self.rules_set
 
 
 @dataclass(frozen=True)
@@ -146,6 +157,10 @@ def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int 
         p1[:min_r_size, :], p2[:min_r_size, :] = cut_p1, cut_p2
 
     return RuleSet.unpack_rules(p1, s_len), RuleSet.unpack_rules(p2, s_len)
+
+
+def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet):
+    pass
 
 
 def fitness_evaluation(match_results: List[Fitness], fit_type=0) -> float:
