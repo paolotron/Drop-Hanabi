@@ -124,7 +124,7 @@ def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int 
     """
     p1, p2 = ruleset_a.pack_rules(), ruleset_b.pack_rules()
     s_len = ruleset_a.sensor_length()
-    min_r_size = min([ruleset_a.number_rules(), min(ruleset_b.number_rules())])
+    min_r_size = min([ruleset_a.number_rules(), ruleset_b.number_rules()])
 
     # One Point Crossover
     if paradigm == 0:
@@ -140,7 +140,7 @@ def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int 
 
     # Uniform Crossover
     if paradigm == 2:
-        rule_swap = np.random.choice([True, False], size=random.randint(0, min_r_size), p=(.5, .5))
+        rule_swap = np.random.choice([True, False], size=min_r_size, p=(.5, .5))
         cut_p1, cut_p2 = p1[:min_r_size, :], p2[:min_r_size, :]
         cut_p1[rule_swap, :], cut_p2[rule_swap, :] = cut_p2[rule_swap, :], cut_p1[rule_swap, :]
         p1[:min_r_size, :], p2[:min_r_size, :] = cut_p1, cut_p2
@@ -219,5 +219,25 @@ def dummy_play(n_players):
 
 
 if __name__ == '__main__':
+    n_players = 3
+    g = GameManager(n_players)
+    population = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(10)]
 
+    for _ in range(10):
+        print(population)
+        fit = tournament_play(population, g, 1)
+        result = []
+        for i, f in enumerate(fit):
+            result.append((i, sum(elem.points for elem in f)))
+        result.sort(key=lambda x: x[1])
+        new_pop = []
+        for e in result[5:]:
+            new_pop.append(population[e[0]])
+        for _ in range(2):
+            ret = crossover_pitts_style(new_pop[3], new_pop[4], 2)
+            new_pop.append(ret[0])
+            new_pop.append(ret[1])
+        new_pop.append(point_mutation(new_pop[4], 0.05))
+        population = new_pop.copy()
+    g.stop()
     pass
