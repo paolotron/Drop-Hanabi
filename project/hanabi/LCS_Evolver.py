@@ -107,10 +107,10 @@ def delete_unused_rules(rule: RuleSet, matches: List[NDArray], threshold=0) -> R
     @param matches: list of rule_match returned from fitness function
     @return: new rule set
     """
-    n_rules = rule.number_rules()
+    n_rules = max(matches, key=lambda x: x.shape[1]).shape[1]
     tot_usages = sum([np.append(np.sum(match, axis=0), np.zeros(n_rules - match.shape[1])) for match in matches])
     used_rules = tot_usages > threshold
-    return RuleSet.unpack_rules(rule.pack_rules()[used_rules, :], rule.sensor_length())
+    return RuleSet.unpack_rules(rule.pack_rules()[used_rules[:rule.number_rules()], :], rule.sensor_length())
 
 
 def point_mutation(rule: RuleSet, p: float = 0.01, copy=False) -> RuleSet:
