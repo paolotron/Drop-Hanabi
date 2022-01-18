@@ -327,11 +327,11 @@ def bootstrap_rules(n_players: int) -> NDArray:
         rule_set[n_cards*2 + other_players*10*2 + i, idx] = True
         rule_set[n_cards*2 + other_players*10*2 + i, len_rule: len_rule*2] = True
         rule_set[n_cards*2 + other_players*10*2 + i, idx + len_rule] = False
-        rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, len_rule + idx_useless] = False
+        rule_set[n_cards*2 + other_players*10*2 + i, len_rule + idx_useless] = False
         rule_set[n_cards*2 + other_players*10*2 + i + n_cards, idx2] = True
         rule_set[n_cards*2 + other_players*10*2 + i + n_cards, len_rule: len_rule * 2] = True
         rule_set[n_cards*2 + other_players*10*2 + i + n_cards, idx2 + len_rule] = False
-        rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, len_rule + idx_useless] = False
+        rule_set[n_cards*2 + other_players*10*2 + i + n_cards, len_rule + idx_useless] = False
         act = list(map(lambda x: bool(int(x)), str(bin(i+n_cards))[2:][::-1]))
         for j, a in enumerate(act):
             rule_set[n_cards*2 + other_players*10*2 + i, len_rule*2 + j] = a
