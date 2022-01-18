@@ -337,7 +337,7 @@ def __hint_type(knowledge: ArrayLike, card) -> int:
     if np.sum(knowledge, axis=0)[card.value - 1] >= 1:
         res1 = True
     # player already knows the color
-    if np.sum(knowledge, axis=1)[index] >= 1:
+    if np.sum(knowledge, axis=1)[index.value] >= 1:
         res2 = True
 
     if res1 and res2:
@@ -372,7 +372,10 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
         if player == knowledge_map.getPlayerName():
             continue
         for i in range(1, 6):
-            val = check_number(i, knowledge_map.hands[player], knowledge_map.getTableCards(), hand_player)
+            val = check_number(i,
+                               knowledge_map.hands[player],
+                               knowledge_map.getTableCards(),
+                               hand_player)
             ret.append(val)
 
     return ret
@@ -397,12 +400,16 @@ def hint_color(knowledge_map: KnowledgeMap):
 
     ret = []
     for player in knowledge_map.getPlayerList():
+        hand_player = knowledge_map.getProbabilityMatrix(player)
         if player == knowledge_map.getPlayerName():
             continue
         for color in Color:
             if color == Color.UNKNOWN:
                 continue
-            val = check_color(Color.fromint(color.value), knowledge_map.hands[player], knowledge_map.getTableCards())
+            val = check_color(Color.fromint(color.value),
+                              knowledge_map.hands[player],
+                              knowledge_map.getTableCards(),
+                              hand_player)
             ret.append(val)
 
     return ret
