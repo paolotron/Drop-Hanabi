@@ -94,7 +94,7 @@ class RiskyPlaySensor(GenericSensor):
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
         return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()),
-                                     knowledge_map.hints, knowledge_map.getTableCards(), knowledge_map.numCards, 0.8))
+                                     knowledge_map.hints[knowledge_map.getPlayerName()], knowledge_map.getTableCards(), knowledge_map.numCards, 0.8))
 
 
 class NoHintLeftSensor(GenericSensor):
