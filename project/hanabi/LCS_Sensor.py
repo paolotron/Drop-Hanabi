@@ -94,7 +94,7 @@ class RiskyPlaySensor(GenericSensor):
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
         return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()),
-                                     knowledge_map.hints[knowledge_map.getPlayerName()], knowledge_map.getTableCards(), knowledge_map.numCards, 0.8))
+                                     knowledge_map.hints[knowledge_map.getPlayerName()], 0.8))
 
 
 class NoHintLeftSensor(GenericSensor):
@@ -246,18 +246,15 @@ def play_known(my_hand: List[ArrayLike], table_cards: Dict[str, List]) -> List[b
     return ret
 
 
-def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], table_cards: Dict[str, List], num_cards: int,
-                 prob: float):
+def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], prob: float):
     """
     return the bitstring that represent which card of the hand are possible play
     @param my_hand: list of matrix 5x5
     @param prob: float representing the probability accepted
     @param hints: list of matrix 5x5
-    @param table_cards : cards already played
-    @param num_cards : number of cards in hand
     @return list of booleans
     """
-    ret = play_hinted(hints, num_cards, table_cards)
+    ret = check_hint_matrix(hints)
     if not any(ret):
         ret = []
         for i, my_knowledge_matrix in enumerate(my_hand):
@@ -266,6 +263,13 @@ def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], table_cards: 
             else:
                 ret.append(False)
     return ret
+
+
+def check_hint_matrix(hints: List[ArrayLike]):
+    r = []
+    for card in hints:
+        r.append(np.sum(np.any(card, axis=1)) == 1 or np.sum(np.any(card, axis=0)) == 1)
+    return r
 
 
 def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, List]):
@@ -283,6 +287,9 @@ def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, L
 
 
 def hints_received(hints: List[ArrayLike], num_cards: int):
+    """
+    returns two arrays
+    """
     ret_n = [-1 for _ in range(num_cards)]
     ret_c = [-1 for _ in range(num_cards)]
     # ret_n and ret_c will tell, for each card in my hand, if it has been hinted its color
@@ -290,14 +297,11 @@ def hints_received(hints: List[ArrayLike], num_cards: int):
     for i in range(num_cards):
         # for each card in my hand check if it has been hinted and if it's playable
         # for each number and for each color
-        sum_r = np.sum(hints[i], axis=1)
-        sum_c = np.sum(hints[i], axis=0)
-        playable = False
         for j in range(5):
-            if sum_r[j] == 5:
+            if np.any(hints[i][:, j]):
                 ret_n[i] = j + 1
                 break
-            elif sum_c[j] == 5:
+            elif np.any(hints[i][j, :]):
                 ret_c[i] = j
                 break
     return ret_n, ret_c
