@@ -119,6 +119,17 @@ class UselessDiscardSensor(GenericSensor):
         return np.array(knowledge_map.getNoteTokens() == 0)
 
 
+class ThunderStrikeMoment(GenericSensor):
+    def __init__(self):
+        super().__init__(1)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
+    def activate(self, knowledge_map) -> NDArray[bool_]:
+        return np.array(knowledge_map.getStormTokens() == 1)
+
+
 class HintNumberToPlaySensor(GenericSensor):
     def __init__(self, n_player: int):
         super().__init__(5 * (n_player - 1))
@@ -152,6 +163,7 @@ class HintToDiscardSensor(GenericSensor):
         return np.array(hint_discard(knowledge_map))
 
 
+
 def get_debug_string(n_players, sensor_type, idx=0):
     i = 0
     for sens in package_sensors(n_players):
@@ -169,7 +181,8 @@ def package_sensors(n_player: int):
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
             HintToDiscardSensor(n_player),
-            UselessDiscardSensor()]
+            UselessDiscardSensor(),
+            ThunderStrikeMoment()]
 
 def get_sensor_len(n_player: int):
     return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
