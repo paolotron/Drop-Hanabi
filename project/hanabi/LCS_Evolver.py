@@ -20,19 +20,24 @@ class Evolver:
 
     def __init__(self, num_players):
         self.num_players = num_players
-        self.rules_set = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(num_players)]
+        self.num_population = 10
         self.gameManager = GameManager(num_players)
+        self.rules_set = [RuleSet.empty_rules(self.gameManager.sensor_len(), self.gameManager.action_len())
+                          for _ in range(self.num_population)]
 
     def evolve(self):
-        results = tournament_play(self.rules_set, self.gameManager, 2)
-        points = np.zeros(self.num_players)
+        results = tournament_play(self.rules_set, self.gameManager, 1)
+
+        points = np.zeros(len(self.rules_set))
         for i, player in enumerate(results):
             tot = 0
             for fit in player:
+                fit: Fitness
                 tot += fit.points
             points[i] = tot
-        ind = points.argpartition(-2)
-        full_crossover(self.rules_set[ind[0]], self.rules_set[ind[1]])
+        ind_p1, ind_p2 = points.argpartition(-2)[-2:]
+        print(points[ind_p1] / len(results[0]), points[ind_p2] / len(results[0]), self.rules_set[0].number_rules())
+        self.rules_set = full_crossover(self.rules_set[ind_p1], self.rules_set[ind_p2], self.num_population - 2)
 
         # sto metodo mi ritorna altri ruleSet
         return self.rules_set
