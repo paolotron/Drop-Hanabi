@@ -22,9 +22,9 @@ class RuleSet:
         @param rule_length: length of the actions
         @return: RuleSet
         """
-        match_string = rule_array[:, :rule_length]
-        dont_care = rule_array[:, rule_length:2 * rule_length]
-        action = rule_array[:, 2 * rule_length:]
+        match_string = rule_array[:, :rule_length].copy()
+        dont_care = rule_array[:, rule_length:2 * rule_length].copy()
+        action = rule_array[:, 2 * rule_length:].copy()
         return RuleSet(match_string,
                        dont_care,
                        action)
@@ -118,7 +118,7 @@ class EndResult:
     """
     rule_match: NDArray
     critical_rules: NDArray
-    rule_usage: tuple[int]
+    rule_usage: Tuple[int]
 
 
 class LCSRules:
