@@ -268,11 +268,10 @@ def dummy_play(n_players):
 
 
 def bootstrap_rules(n_players: int) -> NDArray:
-    n_cards = 4 if n_players <= 3 else 5
-    sens = Sens.package_sensors(n_players)
+    n_cards = 4 if n_players > 3 else 5
     len_rule = Sens.get_sensor_len(n_players)
-    n_rules = n_cards*2
-    rule_set = np.zeros((100, len_rule*2 + LCSActor.get_action_length()), dtype=bool)
+    other_players = n_players - 1
+    rule_set = np.zeros((n_cards*4+other_players*20, len_rule*2 + LCSActor.get_action_length()), dtype=bool)
     for i in range(n_cards):
         idx = Sens.get_debug_string(n_players, Sens.SurePlaySensor, i)
         idx2 = Sens.get_debug_string(n_players, Sens.RiskyPlaySensor, i)
@@ -288,10 +287,10 @@ def bootstrap_rules(n_players: int) -> NDArray:
             rule_set[i+n_cards, len_rule*2 + j] = a
 
     idx_hint = Sens.get_debug_string(n_players, Sens.NoHintLeftSensor, 0)
-    for i in range(n_players):
+    for i in range(other_players):
         for j in range(5):
-            idx = Sens.get_debug_string(n_players, Sens.HintNumberToPlaySensor, j)
-            idx2 = Sens.get_debug_string(n_players, Sens.HintColorToPlaySensor, j)
+            idx = Sens.get_debug_string(n_players, Sens.HintNumberToPlaySensor, i*5+j)
+            idx2 = Sens.get_debug_string(n_players, Sens.HintColorToPlaySensor,  i*5+j)
             act = list(map(lambda x: bool(int(x)), str(bin(n_cards*2 + i*10 + j))[2:][::-1]))
             act2 = list(map(lambda x: bool(int(x)), str(bin(n_cards*2 + i*10 + j + 5))[2:][::-1]))
             rule_set[n_cards*2 + i*10 + j, idx] = True
@@ -307,30 +306,30 @@ def bootstrap_rules(n_players: int) -> NDArray:
             for k, a in enumerate(act2):
                 rule_set[n_cards*2 + i*10 + j + 5, len_rule*2 + k] = a
 
-    for i in range(n_players):
+    for i in range(other_players):
         for j in range(10):
-            idx = Sens.get_debug_string(n_players, Sens.HintToDiscardSensor, j)
+            idx = Sens.get_debug_string(n_players, Sens.HintToDiscardSensor, i*10+j)
             act = list(map(lambda x: bool(int(x)), str(bin(n_cards*2 + i*10 + j))[2:][::-1]))
-            rule_set[n_cards*2 + n_players*10 + i*10 + j, idx] = True
-            rule_set[n_cards*2 + n_players*10 + i*10 + j, len_rule: len_rule*2] = True
-            rule_set[n_cards*2 + n_players*10 + i*10 + j, idx + len_rule] = False
-            rule_set[n_cards*2 + n_players*10 + i*10 + j, idx_hint + len_rule] = False
+            rule_set[n_cards*2 + other_players*10 + i*10 + j, idx] = True
+            rule_set[n_cards*2 + other_players*10 + i*10 + j, len_rule: len_rule*2] = True
+            rule_set[n_cards*2 + other_players*10 + i*10 + j, idx + len_rule] = False
+            rule_set[n_cards*2 + other_players*10 + i*10 + j, idx_hint + len_rule] = False
             for k, a in enumerate(act):
-                rule_set[n_cards*2 + n_players*10 + i*10 + j, len_rule*2 + k] = a
+                rule_set[n_cards*2 + other_players*10 + i*10 + j, len_rule*2 + k] = a
 
     for i in range(n_cards):
         idx = Sens.get_debug_string(n_players, Sens.DiscardKnowSensor, i)
         idx2 = Sens.get_debug_string(n_players, Sens.DiscardUnknownSensor, i)
-        rule_set[n_cards*2 + n_players*10*2 + i, idx] = True
-        rule_set[n_cards*2 + n_players*10*2 + i, len_rule: len_rule*2] = True
-        rule_set[n_cards*2 + n_players*10*2 + i, idx + len_rule] = False
-        rule_set[n_cards*2 + n_players*10*2 + i + n_cards, idx2] = True
-        rule_set[n_cards*2 + n_players*10*2 + i + n_cards, len_rule: len_rule * 2] = True
-        rule_set[n_cards*2 + n_players*10*2 + i + n_cards, idx2 + len_rule] = False
+        rule_set[n_cards*2 + other_players*10*2 + i, idx] = True
+        rule_set[n_cards*2 + other_players*10*2 + i, len_rule: len_rule*2] = True
+        rule_set[n_cards*2 + other_players*10*2 + i, idx + len_rule] = False
+        rule_set[n_cards*2 + other_players*10*2 + i + n_cards, idx2] = True
+        rule_set[n_cards*2 + other_players*10*2 + i + n_cards, len_rule: len_rule * 2] = True
+        rule_set[n_cards*2 + other_players*10*2 + i + n_cards, idx2 + len_rule] = False
         act = list(map(lambda x: bool(int(x)), str(bin(i+n_cards))[2:][::-1]))
         for j, a in enumerate(act):
-            rule_set[n_cards*2 + n_players*10*2 + i, len_rule*2 + j] = a
-            rule_set[n_cards*2 + n_players*10*2 + i + n_cards, len_rule*2 + j] = a
+            rule_set[n_cards*2 + other_players*10*2 + i, len_rule*2 + j] = a
+            rule_set[n_cards*2 + other_players*10*2 + i + n_cards, len_rule*2 + j] = a
     return rule_set
 
 

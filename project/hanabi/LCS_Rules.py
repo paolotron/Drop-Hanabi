@@ -165,10 +165,10 @@ class LCSRules:
 
         activated_rules = np.argwhere(rule_activation).reshape(-1,)
         # Choose the more specific rule
-        choice = activated_rules[np.argmin(np.sum(self.__rule.dont_care[activated_rules], axis=1))]
+        choice = activated_rules[0]
 
         self.__rule_use.append(choice)
-        action = self.__rule.get_action(choice - 1)
+        action = self.__rule.get_action(choice)
 
         return action
 

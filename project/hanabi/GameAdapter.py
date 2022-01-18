@@ -127,8 +127,8 @@ class GameAdapter:
         send action to the socket
         @param action: GameData
         """
-        if verbose:
-            print(f"{self.name} SENDING ACTION {action}")
+
+        print(f"{self.name} SENDING ACTION {action}")
         self.socket.send(action.serialize())
         # self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
         # response = GameData.GameData.deserialize(self.socket.recv(self.datasize))

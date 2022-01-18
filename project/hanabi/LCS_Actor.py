@@ -40,16 +40,13 @@ class LCSActor:
         Calls GameAdapter's functions
         @param act_string: np.ndarray[bool] len = 6
         """
-        array = np.array(act_string, dtype=int)
+        act_array = np.array(act_string, dtype=int)
 
-        if len(array) != 6:
+        if len(act_array) != 6:
             print('WARNING: array length is not 6')
 
-        index = 0
+        index = int(''.join(map(str, act_array))[::-1], base=2)
         p = 0
-        for num in array:
-            index += num * pow(2, p)
-            p += 1
 
         index = index % self.max_index
         res = False
