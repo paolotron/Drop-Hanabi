@@ -306,11 +306,8 @@ class Player(ABC):
         else:
             self.io.reset()
 
-        self.lock = args[1]
-        self.setup(args[0], **kwargs)
+        self.setup(*args, **kwargs)
         for state in self.io:
-            self.lock.acquire()
             self.make_action(state)
-            self.lock.release()
 
         self.cleanup()
