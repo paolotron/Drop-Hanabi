@@ -93,8 +93,8 @@ class RiskyPlaySensor(GenericSensor):
         return super().get_out_size()
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(
-            play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()), self.probability))
+        return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()),
+                                     knowledge_map.hints, knowledge_map.getTableCards(), knowledge_map.numCards, 0.8))
 
 
 class NoHintLeftSensor(GenericSensor):
@@ -106,6 +106,17 @@ class NoHintLeftSensor(GenericSensor):
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
         return np.array(knowledge_map.getNoteTokens() == 8)
+
+
+class UselessDiscardSensor(GenericSensor):
+    def __init__(self):
+        super().__init__(1)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
+    def activate(self, knowledge_map) -> NDArray[bool_]:
+        return np.array(knowledge_map.getNoteTokens() == 0)
 
 
 class HintNumberToPlaySensor(GenericSensor):
@@ -155,10 +166,10 @@ def package_sensors(n_player: int):
             SurePlaySensor(n_player),  # n_cards
             RiskyPlaySensor(n_player),  # n_cards
             NoHintLeftSensor(),
+            UselessDiscardSensor(),
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
             HintToDiscardSensor(n_player)]
-
 
 def get_sensor_len(n_player: int):
     return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
@@ -235,20 +246,61 @@ def play_known(my_hand: List[ArrayLike], table_cards: Dict[str, List]) -> List[b
     return ret
 
 
-def play_unknown(my_hand: List[ArrayLike], prob: float):
+def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], table_cards: Dict[str, List], num_cards: int,
+                 prob: float):
     """
     return the bitstring that represent which card of the hand are possible play
     @param my_hand: list of matrix 5x5
     @param prob: float representing the probability accepted
+    @param hints: list of matrix 5x5
+    @param table_cards : cards already played
+    @param num_cards : number of cards in hand
     @return list of booleans
     """
+    ret = play_hinted(hints, num_cards, table_cards)
+    if not any(ret):
+        ret = []
+        for i, my_knowledge_matrix in enumerate(my_hand):
+            if np.any(np.sum(my_knowledge_matrix, axis=1)[i] >= prob):
+                ret.append(True)
+            else:
+                ret.append(False)
+    return ret
+
+
+def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, List]):
     ret = []
-    for i, my_knowledge_matrix in enumerate(my_hand):
-        if np.any(np.sum(my_knowledge_matrix, axis=1)[i] >= prob):
+    numbers, colors = hints_received(hints, num_cards)
+    lengths = [len(table_cards[i]) for i in table_cards.keys()]
+    for n, c in numbers, colors:
+        if n != -1 and any([ll == n - 1 for ll in lengths]):
+            ret.append(True)
+        elif c != -1 and len(table_cards[Color.fromint(c)]) != 5:
             ret.append(True)
         else:
             ret.append(False)
     return ret
+
+
+def hints_received(hints: List[ArrayLike], num_cards: int):
+    ret_n = [-1 for _ in range(num_cards)]
+    ret_c = [-1 for _ in range(num_cards)]
+    # ret_n and ret_c will tell, for each card in my hand, if it has been hinted its color
+    # its number
+    for i in range(num_cards):
+        # for each card in my hand check if it has been hinted and if it's playable
+        # for each number and for each color
+        sum_r = np.sum(hints[i], axis=1)
+        sum_c = np.sum(hints[i], axis=0)
+        playable = False
+        for j in range(5):
+            if sum_r[j] == 5:
+                ret_n[i] = j + 1
+                break
+            elif sum_c[j] == 5:
+                ret_c[i] = j
+                break
+    return ret_n, ret_c
 
 
 def __can_be_played(card, table_cards: Dict[str, List]) -> bool:
