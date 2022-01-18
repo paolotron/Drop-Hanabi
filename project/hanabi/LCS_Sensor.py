@@ -93,7 +93,8 @@ class RiskyPlaySensor(GenericSensor):
         return super().get_out_size()
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()), self.probability))
+        return np.array(
+            play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()), self.probability))
 
 
 class NoHintLeftSensor(GenericSensor):
@@ -109,7 +110,7 @@ class NoHintLeftSensor(GenericSensor):
 
 class HintNumberToPlaySensor(GenericSensor):
     def __init__(self, n_player: int):
-        super().__init__(5*(n_player-1))
+        super().__init__(5 * (n_player - 1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -120,7 +121,7 @@ class HintNumberToPlaySensor(GenericSensor):
 
 class HintColorToPlaySensor(GenericSensor):
     def __init__(self, n_player: int):
-        super().__init__(5*(n_player-1))
+        super().__init__(5 * (n_player - 1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -131,7 +132,7 @@ class HintColorToPlaySensor(GenericSensor):
 
 class HintToDiscardSensor(GenericSensor):
     def __init__(self, n_player: int):
-        super().__init__(10*(n_player-1))
+        super().__init__(10 * (n_player - 1))
 
     def get_out_size(self):
         return super().get_out_size()
@@ -140,15 +141,24 @@ class HintToDiscardSensor(GenericSensor):
         return np.array(hint_discard(knowledge_map))
 
 
+def get_debug_string(n_players, sensor_type, idx=0):
+    i = 0
+    for sens in package_sensors(n_players):
+        if sens is sensor_type:
+            return i + idx
+        i += sens.get_out_size()
+
+
 def package_sensors(n_player: int):
-    return [DiscardKnowSensor(n_player),
-            DiscardUnknownSensor(n_player),
-            SurePlaySensor(n_player),
-            RiskyPlaySensor(n_player),
+    return [DiscardKnowSensor(n_player),  # n_cards
+            DiscardUnknownSensor(n_player),  # n_cards
+            SurePlaySensor(n_player),  # n_cards
+            RiskyPlaySensor(n_player),  # n_cards
             NoHintLeftSensor(),
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
             HintToDiscardSensor(n_player)]
+
 
 def get_sensor_len(n_player: int):
     return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
@@ -168,7 +178,7 @@ def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int
         elif 0 < len(table_cards[color]) < 5:
             p.append(probability[index.value][table_cards[color][-1].value])
         for card in table_cards[color]:
-            if probability[index.value][card.value-1] == 1:
+            if probability[index.value][card.value - 1] == 1:
                 # discard
                 return -1
     if any([x >= 1 for x in p]):
@@ -283,9 +293,6 @@ def __hint_type(knowledge: ArrayLike, card) -> int:
     return -1
 
 
-
-
-
 def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     """
     return the bitstring that represent which number are hintable
@@ -365,7 +372,8 @@ def hint_discard(knowledge_map: KnowledgeMap):
             continue
         for card in knowledge_map.hands[player]:
             ret[j + card.value - 1] = number_can_be_discarded(card.value, knowledge_map.getTableCards())
-            ret[j + 5 + Color.fromstr(card.color).value] = color_can_be_discarded(card.color, knowledge_map.getTableCards())
+            ret[j + 5 + Color.fromstr(card.color).value] = color_can_be_discarded(card.color,
+                                                                                  knowledge_map.getTableCards())
         j += 10
 
     return ret
