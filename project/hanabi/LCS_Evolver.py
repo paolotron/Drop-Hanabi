@@ -100,15 +100,15 @@ def delete_critical_rules(rule: RuleSet, criticals) -> RuleSet:
     return RuleSet.unpack_rules(rule_matr[~criticals, :], rule.sensor_length())
 
 
-def delete_unused_rules(rule: RuleSet, usages: List[NDArray], threshold=0) -> RuleSet:
+def delete_unused_rules(rule: RuleSet, matches: List[NDArray], threshold=0) -> RuleSet:
     """
     Return a new ruleset with rules that were used more then threshold
     @param rule: ruleset
-    @param usages: list of usages returned from fitness function
+    @param matches: list of rule_match returned from fitness function
     @return: new rule set
     """
     n_rules = rule.number_rules()
-    tot_usages = sum([np.append(np.sum(usage, axis=0), np.zeros(n_rules - usage.shape[1])) for usage in usages])
+    tot_usages = sum([np.append(np.sum(match, axis=0), np.zeros(n_rules - match.shape[1])) for match in matches])
     used_rules = tot_usages > threshold
     return RuleSet.unpack_rules(rule.pack_rules()[used_rules, :], rule.sensor_length())
 
