@@ -356,21 +356,23 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     @return list of booleans
     """
 
-    def check_number(col: int, hand: List, table_cards: Dict[str, List]):
+    def check_number(col: int, hand: List, table_cards: Dict[str, List], player_hand: List[ArrayLike]):
         ret_val = False
-        for card in hand:
-            if card.value == col and __can_be_played(card, table_cards):
-                ret_val = True
-            if card.value == col and not __can_be_played(card, table_cards):
-                return False
+        for card, matrix in zip(hand, player_hand):
+            if __hint_type(matrix, card) != 1:
+                if card.value == col and __can_be_played(card, table_cards):
+                    ret_val = True
+                if card.value == col and not __can_be_played(card, table_cards):
+                    return False
         return ret_val
 
     ret = []
     for player in knowledge_map.getPlayerList():
+        hand_player = knowledge_map.getProbabilityMatrix(player)
         if player == knowledge_map.getPlayerName():
             continue
         for i in range(1, 6):
-            val = check_number(i, knowledge_map.hands[player], knowledge_map.getTableCards())
+            val = check_number(i, knowledge_map.hands[player], knowledge_map.getTableCards(), hand_player)
             ret.append(val)
 
     return ret
@@ -383,13 +385,14 @@ def hint_color(knowledge_map: KnowledgeMap):
     @return list of booleans
     """
 
-    def check_color(col: str, hand: List, table_cards: Dict[str, List]):
+    def check_color(col: str, hand: List, table_cards: Dict[str, List], player_hand: List[ArrayLike]):
         ret_val = False
-        for card in hand:
-            if card.color == col and __can_be_played(card, table_cards):
-                ret_val = True
-            if card.color == col and not __can_be_played(card, table_cards):
-                return False
+        for card, matrix in zip(hand, player_hand):
+            if __hint_type(matrix, card) != 1:
+                if card.color == col and __can_be_played(card, table_cards):
+                    ret_val = True
+                if card.color == col and not __can_be_played(card, table_cards):
+                    return False
         return ret_val
 
     ret = []
