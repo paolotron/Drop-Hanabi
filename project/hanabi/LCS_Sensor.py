@@ -141,10 +141,10 @@ class HintToDiscardSensor(GenericSensor):
 
 
 def package_sensors(n_player: int):
-    return [DiscardKnowSensor(n_player),
-            DiscardUnknownSensor(n_player),
-            SurePlaySensor(n_player),
-            RiskyPlaySensor(n_player),
+    return [DiscardKnowSensor(n_player),  # n_cards
+            DiscardUnknownSensor(n_player),  # n_cards
+            SurePlaySensor(n_player),  # n_cards
+            RiskyPlaySensor(n_player),  # n_cards
             NoHintLeftSensor(),
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
