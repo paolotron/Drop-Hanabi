@@ -272,13 +272,79 @@ def dummy_play(n_players):
             print(i)
 
 
+def bootstrap_rules(n_players: int) -> NDArray:
+    n_cards = 4 if n_players <= 3 else 5
+    sens = Sens.package_sensors(n_players)
+    len_rule = Sens.get_sensor_len(n_players)
+    n_rules = n_cards*2
+    rule_set = np.zeros((n_rules, len_rule*2 + LCSActor.get_action_length()), dtype=bool)
+    for i in range(n_cards):
+        idx = Sens.get_debug_string(n_players, Sens.SurePlaySensor, i)
+        idx2 = Sens.get_debug_string(n_players, Sens.RiskyPlaySensor, i)
+        rule_set[i, idx] = True
+        rule_set[i, len_rule: len_rule*2] = True
+        rule_set[i, idx + len_rule] = False
+        rule_set[i+n_cards, idx2] = True
+        rule_set[i+n_cards, len_rule: len_rule * 2] = True
+        rule_set[i+n_cards, idx2 + len_rule] = False
+        act = list(map(lambda x: bool(int(x)), str(bin(i))[2:][::-1]))
+        for j, a in enumerate(act):
+            rule_set[i, len_rule*2 + j] = a
+            rule_set[i+n_cards, len_rule*2 + j] = a
+
+    idx_hint = Sens.get_debug_string(n_players, Sens.NoHintLeftSensor, 0)
+    for i in range(n_players):
+        for j in range(5):
+            idx = Sens.get_debug_string(n_players, Sens.HintNumberToPlaySensor, j)
+            idx2 = Sens.get_debug_string(n_players, Sens.HintColorToPlaySensor, j)
+            act = list(map(lambda x: bool(int(x)), str(bin(n_cards*2 + i*10 + j))[2:][::-1]))
+            act2 = list(map(lambda x: bool(int(x)), str(bin(n_cards*2 + i*10 + j + 5))[2:][::-1]))
+            rule_set[n_cards*2 + i*10 + j, idx] = True
+            rule_set[n_cards*2 + i*10 + j, len_rule: len_rule*2] = True
+            rule_set[n_cards*2 + i*10 + j, idx + len_rule] = False
+            rule_set[n_cards*2 + i*10 + j, idx_hint + len_rule] = False
+            rule_set[n_cards*2 + i*10 + j + 5, idx2] = True
+            rule_set[n_cards*2 + i*10 + j + 5, len_rule: len_rule * 2] = True
+            rule_set[n_cards*2 + i*10 + j + 5, idx2 + len_rule] = False
+            rule_set[n_cards*2 + i*10 + j + 5, idx_hint + len_rule] = False
+            for k, a in enumerate(act):
+                rule_set[n_cards*2 + i*10 + j, len_rule*2 + k] = a
+            for k, a in enumerate(act2):
+                rule_set[n_cards*2 + i*10 + j + 5, len_rule*2 + k] = a
+
+    for i in range(n_players):
+        for j in range(10):
+            idx = Sens.get_debug_string(n_players, Sens.HintToDiscardSensor, j)
+            act = list(map(lambda x: bool(int(x)), str(bin(n_cards*2 + i*10 + j))[2:][::-1]))
+            rule_set[n_cards*2 + n_players*10 + i*10 + j, idx] = True
+            rule_set[n_cards*2 + n_players*10 + i*10 + j, len_rule: len_rule*2] = True
+            rule_set[n_cards*2 + n_players*10 + i*10 + j, idx + len_rule] = False
+            rule_set[n_cards*2 + n_players*10 + i*10 + j, idx_hint + len_rule] = False
+            for k, a in enumerate(act):
+                rule_set[n_cards*2 + n_players*10 + i*10 + j, len_rule*2 + k] = a
+
+    for i in range(n_cards):
+        idx = Sens.get_debug_string(n_players, Sens.DiscardKnowSensor, i)
+        idx2 = Sens.get_debug_string(n_players, Sens.DiscardUnknownSensor, i)
+        rule_set[n_cards*2 + n_players*10*2 + i, idx] = True
+        rule_set[n_cards*2 + n_players*10*2 + i, len_rule: len_rule*2] = True
+        rule_set[n_cards*2 + n_players*10*2 + i, idx + len_rule] = False
+        rule_set[n_cards*2 + n_players*10*2 + i + n_cards, idx2] = True
+        rule_set[n_cards*2 + n_players*10*2 + i + n_cards, len_rule: len_rule * 2] = True
+        rule_set[n_cards*2 + n_players*10*2 + i + n_cards, idx2 + len_rule] = False
+        act = list(map(lambda x: bool(int(x)), str(bin(i+n_cards))[2:][::-1]))
+        for j, a in enumerate(act):
+            rule_set[n_cards*2 + n_players*10*2 + i, len_rule*2 + j] = a
+            rule_set[n_cards*2 + n_players*10*2 + i + n_cards, len_rule*2 + j] = a
+    return rule_set
+
+
 if __name__ == '__main__':
     n_players = 3
     g = GameManager(n_players)
     population = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(10)]
 
     for _ in range(10):
-        print(population)
         fit = tournament_play(population, g, 1)
         result = []
         for i, f in enumerate(fit):
@@ -293,4 +359,6 @@ if __name__ == '__main__':
             new_pop.append(ret[1])
         new_pop.append(point_mutation(new_pop[4], 0.05))
         population = new_pop.copy()
+
+        print(fit)
     g.stop()
