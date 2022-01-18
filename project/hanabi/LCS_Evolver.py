@@ -113,7 +113,7 @@ def delete_unused_rules(rule: RuleSet, matches: List[NDArray], threshold=0) -> R
     return RuleSet.unpack_rules(rule.pack_rules()[used_rules[:rule.number_rules()], :], rule.sensor_length())
 
 
-def point_mutation(rule: RuleSet, p: float = 0.01, copy=False) -> RuleSet:
+def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
     """
     Bit flip rule set with probability p
     @param rule: rule set
@@ -124,13 +124,8 @@ def point_mutation(rule: RuleSet, p: float = 0.01, copy=False) -> RuleSet:
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.size, p=(1 - p, p))
     random_mask = np.reshape(random_mask, packed_rules.shape)
-    if copy:
-        new_packed_rules = np.copy(packed_rules)
-        new_packed_rules ^= random_mask
-        return RuleSet.unpack_rules(new_packed_rules, rule.sensor_length())
-    else:
-        packed_rules ^= random_mask
-        return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
+    packed_rules ^= random_mask
+    return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
 
 
 def delete_mutation(rule: RuleSet, p: float = 0.05):

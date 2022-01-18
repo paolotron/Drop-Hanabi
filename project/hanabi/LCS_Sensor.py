@@ -272,7 +272,7 @@ def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, L
     ret = []
     numbers, colors = hints_received(hints, num_cards)
     lengths = [len(table_cards[i]) for i in table_cards.keys()]
-    for n, c in numbers, colors:
+    for n, c in zip(numbers, colors):
         if n != -1 and any([ll == n - 1 for ll in lengths]):
             ret.append(True)
         elif c != -1 and len(table_cards[Color.fromint(c)]) != 5:
