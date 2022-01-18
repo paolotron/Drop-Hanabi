@@ -108,18 +108,24 @@ def delete_unused_rules(rule: RuleSet, usages: List[NDArray], threshold=0) -> Ru
     return RuleSet.unpack_rules(rule.pack_rules()[used_rules, :], rule.sensor_length())
 
 
-def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
+def point_mutation(rule: RuleSet, p: float = 0.01, copy=False) -> RuleSet:
     """
     Bit flip rule set with probability p
     @param rule: rule set
     @param p: probability of mutation
+    @param copy: if True does not modify the parent creating a copy
     @return: new rule set
     """
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.size, p=(1 - p, p))
     random_mask = np.reshape(random_mask, packed_rules.shape)
-    packed_rules ^= random_mask
-    return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
+    if copy:
+        new_packed_rules = np.copy(packed_rules)
+        new_packed_rules ^= random_mask
+        return RuleSet.unpack_rules(new_packed_rules, rule.sensor_length())
+    else:
+        packed_rules ^= random_mask
+        return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
 
 
 def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int = 1):
