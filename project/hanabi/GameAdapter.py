@@ -128,7 +128,7 @@ class GameAdapter:
         @param action: GameData
         """
 
-        print(f"{self.name} SENDING ACTION {action}")
+        # print(f"{self.name} SENDING ACTION {action}")
         self.socket.send(action.serialize())
         # self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
         # response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
@@ -142,8 +142,11 @@ class GameAdapter:
         elif type(response) is GameData.ServerHintData:
             response: GameData.ServerHintData
             self.move_history.append(response)
-        elif type(response) is GameData.ServerPlayerMoveOk or type(response) is GameData.ServerPlayerThunderStrike:
+        elif type(response) is GameData.ServerPlayerMoveOk:
             response: GameData.ServerPlayerMoveOk
+            self.move_history.append(response)
+        elif type(response) is GameData.ServerPlayerThunderStrike:
+            response: GameData.ServerPlayerThunderStrike
             self.move_history.append(response)
         elif type(response) is GameData.ServerActionValid:
             response: GameData.ServerActionValid
@@ -198,6 +201,8 @@ class GameAdapter:
         """
         # print(f"{self.name} is HINTING")
         type_h = {HintType.NUMBER: 'value', HintType.COLOR: 'colour'}[type_h]
+        if verbose:
+            print(f"{self.name} SENDING HINT TO {player} : {type_h}, {val}")
         try:
             self._send_action(GameData.ClientHintData(self.name, player, type_h, val))
             result = self._wait_for(
@@ -224,8 +229,13 @@ class GameAdapter:
                                      GameData.ServerInvalidDataReceived,
                                      GameData.ServerPlayerThunderStrike,
                                      GameData.ServerPlayerMoveOk])
+
         except (ConnectionResetError, EndGameException) as e:
             return True
+        if type(result) is GameData.ServerPlayerMoveOk and verbose:
+            print(f"PLAYED {result.card} FROM {self.name} OK!")
+        if type(result) is GameData.ServerPlayerThunderStrike and verbose:
+            print(f"PLAYED {result.card} FROM {self.name} THUNDERSTRIKE!")
         if type(result) in [GameData.ServerPlayerMoveOk, GameData.ServerPlayerThunderStrike, GameData.ServerGameOver]:
             return True
         if type(result) in [GameData.ServerInvalidDataReceived, GameData.ServerActionInvalid]:
@@ -244,7 +254,8 @@ class GameAdapter:
             result = self._wait_for([GameData.ServerActionValid, GameData.ServerActionInvalid])
         except (ConnectionResetError, EndGameException) as e:
             return True
-
+        if verbose:
+            print(f"DISCARDED {result.card} FROM {self.name}")
         if type(result) in [GameData.ServerActionValid, GameData.ServerGameOver]:
             return True
         if type(result) is GameData.ServerActionInvalid:
@@ -295,8 +306,11 @@ class Player(ABC):
         else:
             self.io.reset()
 
-        self.setup(*args, **kwargs)
+        self.lock = args[1]
+        self.setup(args[0], **kwargs)
         for state in self.io:
+            self.lock.acquire()
             self.make_action(state)
+            self.lock.release()
 
         self.cleanup()
