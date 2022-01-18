@@ -359,7 +359,7 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
     def check_number(col: int, hand: List, table_cards: Dict[str, List], player_hand: List[ArrayLike]):
         ret_val = False
         for card, matrix in zip(hand, player_hand):
-            if __hint_type(matrix, card) != 1:
+            if __hint_type(matrix, card) not in (0, 1):
                 if card.value == col and __can_be_played(card, table_cards):
                     ret_val = True
                 if card.value == col and not __can_be_played(card, table_cards):
@@ -388,7 +388,7 @@ def hint_color(knowledge_map: KnowledgeMap):
     def check_color(col: str, hand: List, table_cards: Dict[str, List], player_hand: List[ArrayLike]):
         ret_val = False
         for card, matrix in zip(hand, player_hand):
-            if __hint_type(matrix, card) != 1:
+            if __hint_type(matrix, card) not in (0, 2):
                 if card.color == col and __can_be_played(card, table_cards):
                     ret_val = True
                 if card.color == col and not __can_be_played(card, table_cards):
