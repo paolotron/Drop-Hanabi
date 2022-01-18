@@ -272,7 +272,7 @@ def bootstrap_rules(n_players: int) -> NDArray:
     sens = Sens.package_sensors(n_players)
     len_rule = Sens.get_sensor_len(n_players)
     n_rules = n_cards*2
-    rule_set = np.zeros((n_rules, len_rule*2 + LCSActor.get_action_length()), dtype=bool)
+    rule_set = np.zeros((100, len_rule*2 + LCSActor.get_action_length()), dtype=bool)
     for i in range(n_cards):
         idx = Sens.get_debug_string(n_players, Sens.SurePlaySensor, i)
         idx2 = Sens.get_debug_string(n_players, Sens.RiskyPlaySensor, i)

@@ -155,7 +155,7 @@ class HintToDiscardSensor(GenericSensor):
 def get_debug_string(n_players, sensor_type, idx=0):
     i = 0
     for sens in package_sensors(n_players):
-        if sens is sensor_type:
+        if type(sens) is sensor_type:
             return i + idx
         i += sens.get_out_size()
 
@@ -166,10 +166,10 @@ def package_sensors(n_player: int):
             SurePlaySensor(n_player),  # n_cards
             RiskyPlaySensor(n_player),  # n_cards
             NoHintLeftSensor(),
-            UselessDiscardSensor(),
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
-            HintToDiscardSensor(n_player)]
+            HintToDiscardSensor(n_player),
+            UselessDiscardSensor()]
 
 def get_sensor_len(n_player: int):
     return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))

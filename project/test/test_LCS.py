@@ -10,11 +10,11 @@ from LCS_Sensor import GenericSensor
 
 def get_default_rule_set():
     rule = np.array([[1, 0, 0, 1],
-                     [0, 1, 0, 1]])
+                     [0, 1, 0, 1]], dtype=bool)
     dont = np.array([[0, 0, 1, 0],
-                     [0, 0, 1, 0]])
-    action = np.array([[1, 0], [0, 1]])
-    ruleset = np.hstack([np.packbits(rule, axis=1), np.packbits(dont, axis=1), np.packbits(action, axis=1)])
+                     [0, 0, 1, 0]], dtype=bool)
+    action = np.array([[1, 0], [0, 1]], dtype=bool)
+    ruleset = np.hstack([rule, dont, action])
     return RuleSet.unpack_rules(ruleset, 4)
 
 
@@ -32,9 +32,9 @@ class wrongSensor(GenericSensor):
 
 class RuleSetTest(unittest.TestCase):
     def test_match(self):
-        environment1 = np.packbits(np.array([1, 0, 0, 1]))
-        environment2 = np.packbits(np.array([0, 0, 0, 0]))
-        environment3 = np.packbits(np.array([0, 1, 1, 1]))
+        environment1 = np.array([1, 0, 0, 1], dtype=bool)
+        environment2 = np.array([0, 0, 0, 0], dtype=bool)
+        environment3 = np.array([0, 1, 1, 1], dtype=bool)
         rules = get_default_rule_set()
         self.assertEqual(list(rules.match(environment1)), [True, False])
         self.assertEqual(list(rules.match(environment2)), [False, False])
@@ -42,7 +42,7 @@ class RuleSetTest(unittest.TestCase):
 
     def test_cover(self):
         ruleset = RuleSet.empty_rules(4, 2)
-        environment1 = np.packbits(np.array([1, 0, 0, 1]))
+        environment1 = np.array([1, 0, 0, 1], dtype=bool)
         ruleset.cover(environment1)
         self.assertEqual(list(ruleset.match(environment1))[0], [True])
         ruleset.cover(environment1)
@@ -57,8 +57,8 @@ class RuleSetTest(unittest.TestCase):
             'number_of_rules': 10
         }
         ruleset = RuleSet.random_rule_set(**params)
-        q1 = (params['number_of_rules'], params['rule_length'] // 8 + 1)
-        q2 = (params['number_of_rules'], params['action_length'] // 8 + 1)
+        q1 = (params['number_of_rules'], params['rule_length'])
+        q2 = (params['number_of_rules'], params['action_length'])
         self.assertEqual(ruleset.match_string.shape, q1)
         self.assertEqual(ruleset.dont_care.shape, q1)
         self.assertEqual(ruleset.action.shape, q2)

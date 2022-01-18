@@ -152,7 +152,8 @@ class LCSRules:
         @param environment: Input of Activate Method from Sensors
         @return: np.ndarray[bool]
         """
-        sensor_activation = self.__detect(environment)
+        sensor_list = self.__detect(environment)
+        sensor_activation = np.hstack(sensor_list)
         rule_activation = self.__match(sensor_activation)
         rule_activation *= ~self.__critical_rules
         self.__rule_match = np.vstack([self.__rule_match, rule_activation.reshape(1, -1)])
@@ -168,6 +169,7 @@ class LCSRules:
 
         self.__rule_use.append(choice)
         action = self.__rule.get_action(choice - 1)
+
         return action
 
     def end_game_data(self) -> EndResult:
@@ -187,14 +189,16 @@ class LCSRules:
         """
         return self.__rule
 
-    def __detect(self, environment) -> NDArray[uint8]:
+    def __detect(self, environment) -> List[NDArray[uint8]]:
         """
         Return Sensor output in bitstring format
         @param environment: input of Sensors
         @return: np.ndarray
         """
-        actions = [sensor.get_activate(environment).astype(np.bool_) for sensor in self.__sensor_list]
-        return np.hstack(actions)
+        actions = []
+        for sensor in self.__sensor_list:
+            actions.append(sensor.get_activate(environment).astype(np.bool_))
+        return actions
 
     def __match(self, sensor_activation: NDArray[uint8]) -> NDArray[uint8]:
         """
