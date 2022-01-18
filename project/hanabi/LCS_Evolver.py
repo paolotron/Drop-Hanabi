@@ -127,6 +127,21 @@ def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
     return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
 
 
+def delete_mutation(rule: RuleSet, p: float = 0.05):
+    num_rules = rule.number_rules()
+    random_mask = np.random.choice(a=(True, False), size=num_rules, p=(1 - p, p))
+    rule.dont_care = rule.dont_care[random_mask]
+    rule.action = rule.action[random_mask]
+    rule.match_string = rule.match_string[random_mask]
+
+
+def match_mutation(rule: RuleSet, p: float = 0.05) -> RuleSet:
+    packed_rules = rule.pack_rules()
+    random_mask = np.random.choice(a=(False, True), size=packed_rules.shape, p=(1 - p, p))
+    packed_rules[:, 6:] ^= random_mask[:, 6:]
+    return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
+
+
 def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int = 1):
     """
     Crossover between two rule sets, depending on paradigm it can be the following operation:
@@ -164,8 +179,21 @@ def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int 
     return RuleSet.unpack_rules(p1, s_len), RuleSet.unpack_rules(p2, s_len)
 
 
-def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet):
-    pass
+def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet, child_number: int):
+    offspring = [ruleset_a, ruleset_b]
+    s_len = ruleset_a.sensor_length()
+    p1, p2 = ruleset_a.pack_rules(), ruleset_b.pack_rules()
+    min_r_size = min([ruleset_a.number_rules(), ruleset_b.number_rules()])
+    cut_p1, cut_p2 = p1[:min_r_size, :], p2[:min_r_size, :]
+    for _ in range(child_number):
+        rule_swap = np.random.choice([True, False], size = min_r_size, p = (.5, .5))
+        child = cut_p1.copy()
+        child[rule_swap, :] = cut_p2[rule_swap, :]
+        r = RuleSet.unpack_rules(child, s_len)
+        # delete_mutation(r)
+        r = match_mutation(r, p=0.2)
+        offspring.append(r)
+    return offspring
 
 
 def fitness_evaluation(match_results: List[Fitness], fit_type=0) -> float:
@@ -260,4 +288,3 @@ if __name__ == '__main__':
         new_pop.append(point_mutation(new_pop[4], 0.05))
         population = new_pop.copy()
     g.stop()
-    pass
