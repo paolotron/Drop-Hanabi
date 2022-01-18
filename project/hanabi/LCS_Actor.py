@@ -46,10 +46,10 @@ class LCSActor:
             print('WARNING: array length is not 6')
 
         index = 0
-        pow = 0
+        p = 0
         for num in array:
-            index += num * (2 ^ pow)
-            pow += 1
+            index += num * pow(2, p)
+            p += 1
 
         index = index % self.max_index
         res = False

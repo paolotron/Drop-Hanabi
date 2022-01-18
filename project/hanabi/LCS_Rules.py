@@ -19,7 +19,7 @@ class RuleSet:
         each of this 3 section is padded to 8 bits
         a complete RuleSet is composed of a matrix of rules
         @param rule_array: BitMatrix
-        @param rule_length: length of the actions
+        @param rule_length: length of the rules
         @return: RuleSet
         """
         match_string = rule_array[:, :rule_length].copy()
