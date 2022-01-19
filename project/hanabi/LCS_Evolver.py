@@ -177,7 +177,7 @@ def match_mutation(rule: RuleSet, p: float = 0.05) -> RuleSet:
     """
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.shape, p=(1 - p, p))
-    packed_rules[:, 6:] ^= random_mask[:, 6:]
+    packed_rules[:, :-6] ^= random_mask[:, :-6]
     return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
 
 
