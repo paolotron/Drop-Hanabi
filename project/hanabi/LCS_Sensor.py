@@ -124,13 +124,13 @@ class RiskyPlaySensor(GenericSensor):
         return super().get_out_size()
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        return np.array(play_unknown(knowledge_map.getProbabilityMatrix(knowledge_map.getPlayerName()),
-                                     knowledge_map.hints[knowledge_map.getPlayerName()], 0.8))
+        return np.array(play_unknown(knowledge_map, 0.8))
 
 
 class NoHintLeftSensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that tells if there are hint tokens left
+    activate method returns a single bit
     """
     def __init__(self):
         super().__init__(1)
@@ -144,7 +144,8 @@ class NoHintLeftSensor(GenericSensor):
 
 class UselessDiscardSensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that tells if there are no hint tokens left, in that case a Discard would be useless
+    activate method returns a single bit
     """
     def __init__(self):
         super().__init__(1)
@@ -158,7 +159,8 @@ class UselessDiscardSensor(GenericSensor):
 
 class ThunderStrikeMoment(GenericSensor):
     """
-    TODO Add Description
+    Sensor that tells if two mistakes have been made, in that case the player should avoid risky plays
+    activate method returns a single bit
     """
     def __init__(self):
         super().__init__(1)
@@ -174,7 +176,8 @@ class ThunderStrikeMoment(GenericSensor):
 
 class HintNumberToPlaySensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that tells, for each player, which number can be hinted
+    activate method returns an array of 5*(n_player -1) elements, representing the hintable numbers
     """
     def __init__(self, n_player: int):
         super().__init__(5 * (n_player - 1))
@@ -188,7 +191,8 @@ class HintNumberToPlaySensor(GenericSensor):
 
 class HintColorToPlaySensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that tells, for each player, which color can be hinted
+    activate method returns an array of 5*(n_player -1) elements, representing the hintable colors
     """
     def __init__(self, n_player: int):
         super().__init__(5 * (n_player - 1))
@@ -202,7 +206,10 @@ class HintColorToPlaySensor(GenericSensor):
 
 class HintToDiscardSensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that tells, for each player, if a number of color should be hinted because is useless
+    activate method returns an array of 10*(n_player -1) elements
+    the array contains for each player 5 bits representing the hintable numbers followed by
+    5 bits representing the hintable colors
     """
     def __init__(self, n_player: int):
         super().__init__(10 * (n_player - 1))
@@ -323,15 +330,15 @@ def play_known(my_hand: List[ArrayLike], table_cards: Dict[str, List]) -> List[b
     return ret
 
 
-def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], prob: float):
+def play_unknown(knowledge: KnowledgeMap, prob: float):
     """
-    return the bitstring that represent which card of the hand are possible play
-    @param my_hand: list of matrix 5x5
+    function that tells if the cards should be played, based or hints received, if there is not any hint
+    the function uses the probability matrix to choose the cards
+    @param knowledge: knowledge map
     @param prob: float representing the probability accepted
-    @param hints: list of matrix 5x5
     @return list of booleans
     """
-    ret = check_hint_matrix(hints)
+    ret = play_hinted(knowledge.hints[knowledge.getPlayerName()], knowledge.getTableCards())
     if not any(ret):
         ret = []
         for i, my_knowledge_matrix in enumerate(knowledge.getProbabilityMatrix(knowledge.getPlayerName())):
@@ -342,28 +349,15 @@ def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], prob: float):
     return ret
 
 
-def check_hint_matrix(hints: List[ArrayLike]):
+def play_hinted(hints: List[ArrayLike], table_cards: Dict[str, List]):
     """
-    TODO Add Descritption
+    function that tells which card should be played, based on hints received
     @param hints:
-    @return:
-    """
-    r = []
-    for card in hints:
-        r.append(np.sum(np.any(card, axis=1)) == 1 or np.sum(np.any(card, axis=0)) == 1)
-    return r
-
-
-def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, List]):
-    """
-    TODO Add Descritption
-    @param hints:
-    @param num_cards:
     @param table_cards:
-    @return:
+    @return a list of booleans where the i-th element tells if the i-th card in hand should be played
     """
     ret = []
-    numbers, colors = hints_received(hints, num_cards)
+    numbers, colors = hints_received(hints)
     lengths = [len(table_cards[i]) for i in table_cards.keys()]
     for n, c in zip(numbers, colors):
         if n != -1 and any([ll == n - 1 for ll in lengths]):
@@ -375,24 +369,28 @@ def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, L
     return ret
 
 
-def hints_received(hints: List[ArrayLike], num_cards: int):
+def hints_received(hints: List[ArrayLike]):
     """
-    TODO Add Descritption
+    function that tells if there are hinted numbers and colors
+    @param hints: hints 5x5x(numCards) matrix
+    @return two list of length = numberOfCardsInHand where if the i-th card has not been
+            hinted, the i-th element of the vectors will be -1, otherwise it will contain the hinted number or color
     """
-    ret_n = [-1 for _ in range(num_cards)]
-    ret_c = [-1 for _ in range(num_cards)]
+    ret_n = [-1 for _ in range(len(hints))]
+    ret_c = [-1 for _ in range(len(hints))]
     # ret_n and ret_c will tell, for each card in my hand, if it has been hinted its color
     # its number
-    for i in range(num_cards):
+    for i in range(len(hints)):
         # for each card in my hand check if it has been hinted and if it's playable
         # for each number and for each color
-        for j in range(5):
-            if np.any(hints[i][:, j]):
-                ret_n[i] = j + 1
-                break
-            elif np.any(hints[i][j, :]):
-                ret_c[i] = j
-                break
+        if np.sum(np.any(hints[i], axis=1)) == 1 or np.sum(np.any(hints[i], axis=0)) == 1:
+            for j in range(5):
+                if np.any(hints[i][:, j]):
+                    ret_n[i] = j + 1
+                    break
+                elif np.any(hints[i][j, :]):
+                    ret_c[i] = j
+                    break
     return ret_n, ret_c
 
 
