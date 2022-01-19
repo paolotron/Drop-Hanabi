@@ -40,9 +40,13 @@ class KnowledgeMap:
         numPlayers = number of players in the game
         numCards = number of cards for each player
         hands = dictionary, key = name of a player, value = player's hand
+        hints = dictionary, key = nema of a player, value = boolean matrix, True if it's possible card False otherwise (initially all True)
         tableCards = list of cards, containing only the highest value played car for each color
         discardPile = list of discarded cards
-        other parameters should not be used
+        usedNoteTokens = int
+        usedStormTokens = int
+        deckCards = int, number of cards remaining in the deck
+
         """
         self.name = name
         self.players = players
@@ -58,6 +62,7 @@ class KnowledgeMap:
         self.discardPile = []
         self.usedNoteTokens = 0
         self.usedStormTokens = 0
+        self.deckCards = 50 - self.numPlayers * self.numCards
         self.hands = {}
         self.hints = {}
         for player in players:
@@ -67,10 +72,11 @@ class KnowledgeMap:
 
     def __updateHint(self, player, move):
         """
-        TODO ADD DESCRIPTION
-        @param player:
-        @param move:
-        @return:
+        updates self.hints with the given hint
+        for each matrix in the dict (which represents a single card),
+        puts to False all the positions that are excluded as possible cards
+        @param player: hinted player's name
+        @param move: move taken from GameAdapter's move_history, only hints
         """
         for i, card in enumerate(self.hints[player]):
             val = move.value - 1 if move.type == 'value' else Color.fromstr(move.value).value
@@ -91,18 +97,24 @@ class KnowledgeMap:
 
     def __updateMatrix(self, move):
         """
-        TODO ADD DESCRIPTION
-        @param move:
-        @return:
+        updates self.matrix by subtracting the card played or discarded from the matrix
+        removes one matrix in self.hints at the index corresponding to the index of the card played or discarderd
+        adds a new matrix at the end of the hints, representing the drawn card
+        @param move: move taken from GameAdapter's move_history, only play or discard
         """
         self.matrix[Color.fromstr(move.card.color).value, move.card.value - 1] -= 1
         self.hints[move.lastPlayer].pop(move.cardHandIndex)
-        self.hints[move.lastPlayer].append(np.ones((5, 5), dtype=bool))
+        if self.deckCards > 0:
+            self.hints[move.lastPlayer].append(np.ones((5, 5), dtype=bool))
+        else:
+            self.hints[move.lastPlayer].append(np.zeros((5, 5), dtype=bool))
+        self.deckCards -= 1
 
     def updateHands(self, move_history, state):
         """
-        Updates the hands of all players looking at the move_history
-        Call this at the start of each iteration (your turn)
+        Updates the state of the game looking at the move_history
+        hands, discardPile, tableCards, usedNoteTokens and usedStormTokens are directly taken from the state
+        hints and matrix are updated with custom functions
         @param move_history: move_history from GameAdapter
         @param state: board_state from GameAdapter
         """
@@ -128,23 +140,29 @@ class KnowledgeMap:
 
     def getProbabilityMatrix(self, target, probability=True):
         """
-            Compute probability matrix for each card in the target plater's hand
+            Compute probability matrix for each card in the target player's hand
             @param target: the player name (string) you want to inspect
-            @param probability: if true returns probabilities, otherwise cards
+            @param probability: if true returns probabilities, otherwise number of cards (used for tests)
             @return: list(5x5 numpy array)
             In case of less cards in the hand than the maximum number of holdable cards
             the list returned is still as long as the maximum number of cards
             but you should ignore the elements of non-existing cards
         """
+        def getProb(mat, h):
+            if np.any(h):
+                return mat * h / (mat * h).sum()
+            else:
+                return np.zeros((5, 5))
         tmpMatrix = self.matrix.copy()
         for player in self.players:
             if player != target and player != self.name:
                 for card in self.hands[player]:
                     tmpMatrix[Color.fromstr(card.color).value, card.value - 1] -= 1
         if probability:
-            return [tmpMatrix * m / (tmpMatrix * m).sum() for m in self.hints[target]]
+
+            return [getProb(tmpMatrix, h) for h in self.hints[target]]
         else:
-            return [tmpMatrix * m for m in self.hints[target]]
+            return [tmpMatrix * h for h in self.hints[target]]
 
     def getPlayerName(self):
         return self.name

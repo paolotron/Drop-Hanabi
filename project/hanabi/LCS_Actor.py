@@ -6,8 +6,14 @@ from random import choice
 
 
 class LCSActor:
+    """
+    Given a 6-bits act string, the actor make the action, calling the right function with the right parameters
+    """
 
     def __init__(self, io: GameAdapter):
+        """
+        paramDict: Dictionary containing all the parameters to use in the actions, for each bitstring
+        """
         self.io = io
         self.action_length = 6
         self.paramDict = {}
@@ -37,8 +43,9 @@ class LCSActor:
 
     def act(self, act_string: ArrayLike) -> bool:
         """
-        Calls GameAdapter's functions
+        Calls GameAdapter's functions, based on the act_string
         @param act_string: np.ndarray[bool] len = 6
+        @return True or False
         """
         act_array = np.array(act_string, dtype=int)
 
@@ -46,10 +53,8 @@ class LCSActor:
             print('WARNING: array length is not 6')
 
         index = int(''.join(map(str, act_array))[::-1], base=2)
-        p = 0
 
         index = index % self.max_index
-        res = False
         if 0 <= index < self.num_cards:
             res = self.io.send_play_card(self.paramDict[index])
         elif self.num_cards <= index < self.num_cards * 2:
