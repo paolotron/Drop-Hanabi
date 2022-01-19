@@ -169,8 +169,6 @@ class ThunderStrikeMoment(GenericSensor):
         return super().get_out_size()
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
-        if knowledge_map.getStormTokens() == 2:
-            print("FACCIAMO SCHIFO")
         return np.array(knowledge_map.getStormTokens() == 2)
 
 
