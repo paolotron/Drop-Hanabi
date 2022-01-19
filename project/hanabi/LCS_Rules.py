@@ -61,6 +61,9 @@ class RuleSet:
         assert rule_match.shape[0] == action.shape[0]
         return RuleSet(rule_match, dont_care, action)
 
+    def copy(self):
+        return RuleSet(self.match_string.copy(), self.dont_care.copy(), self.action.copy())
+
     def sensor_length(self):
         return self.match_string.shape[1]
 
