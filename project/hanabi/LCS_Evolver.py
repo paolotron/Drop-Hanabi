@@ -251,6 +251,18 @@ def single_crossover(sigma_male: RuleSet, child_number: int):
     return offspring
 
 
+def shuffle_rules(rule: RuleSet):
+    packed_rules = rule.pack_rules()
+    np.random.shuffle(packed_rules)
+    return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
+
+
+def delete_last_rule(rule: RuleSet, trim: int = 1):
+    rule.action = rule.action[:-trim, :]
+    rule.dont_care = rule.dont_care[:-trim, :]
+    rule.match_string = rule.match_string[:-trim, :]
+
+
 def fitness_evaluation(match_results: List[Fitness], fit_type=0) -> float:
     """
     Evaluate fitness functions from a list of matches into a value from 0 to 1
