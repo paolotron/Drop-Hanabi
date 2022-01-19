@@ -19,7 +19,11 @@ class GenericSensor(ABC):
         """
         self.out_size = out_size
 
-    def get_out_size(self):
+    def get_out_size(self) -> int:
+        """
+        Method for deducing the sensor size
+        @return: int
+        """
         return self.out_size
 
     @abstractmethod
@@ -32,12 +36,20 @@ class GenericSensor(ABC):
         pass
 
     def get_activate(self, knowledge_map: KnowledgeMap):
+        """
+        Method for getting the activation of a specific sensor
+        @param knowledge_map:
+        @return: NDArray
+        """
         res = self.activate(knowledge_map)
         assert res.size == self.out_size
         return res
 
 
 class DiscardKnowSensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
             super().__init__(5)
@@ -53,6 +65,9 @@ class DiscardKnowSensor(GenericSensor):
 
 
 class DiscardUnknownSensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
             super().__init__(5)
@@ -67,6 +82,9 @@ class DiscardUnknownSensor(GenericSensor):
 
 
 class SurePlaySensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
             super().__init__(5)
@@ -82,6 +100,9 @@ class SurePlaySensor(GenericSensor):
 
 
 class RiskyPlaySensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int, probability=0.8):
         if n_player == 2 or n_player == 3:
             super().__init__(5)
@@ -98,6 +119,9 @@ class RiskyPlaySensor(GenericSensor):
 
 
 class NoHintLeftSensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self):
         super().__init__(1)
 
@@ -109,6 +133,9 @@ class NoHintLeftSensor(GenericSensor):
 
 
 class UselessDiscardSensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self):
         super().__init__(1)
 
@@ -119,7 +146,26 @@ class UselessDiscardSensor(GenericSensor):
         return np.array(knowledge_map.getNoteTokens() == 0)
 
 
+class ThunderStrikeMoment(GenericSensor):
+    """
+    TODO Add Description
+    """
+    def __init__(self):
+        super().__init__(1)
+
+    def get_out_size(self):
+        return super().get_out_size()
+
+    def activate(self, knowledge_map) -> NDArray[bool_]:
+        if knowledge_map.getStormTokens() == 2:
+            pass
+        return np.array(knowledge_map.getStormTokens() == 2)
+
+
 class HintNumberToPlaySensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int):
         super().__init__(5 * (n_player - 1))
 
@@ -131,6 +177,9 @@ class HintNumberToPlaySensor(GenericSensor):
 
 
 class HintColorToPlaySensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int):
         super().__init__(5 * (n_player - 1))
 
@@ -142,6 +191,9 @@ class HintColorToPlaySensor(GenericSensor):
 
 
 class HintToDiscardSensor(GenericSensor):
+    """
+    TODO Add Description
+    """
     def __init__(self, n_player: int):
         super().__init__(10 * (n_player - 1))
 
@@ -153,6 +205,9 @@ class HintToDiscardSensor(GenericSensor):
 
 
 def get_debug_string(n_players, sensor_type, idx=0):
+    """
+    TODO DELETE THIS FUNCTION
+    """
     i = 0
     for sens in package_sensors(n_players):
         if type(sens) is sensor_type:
@@ -161,17 +216,29 @@ def get_debug_string(n_players, sensor_type, idx=0):
 
 
 def package_sensors(n_player: int):
-    return [DiscardKnowSensor(n_player),  # n_cards
-            DiscardUnknownSensor(n_player),  # n_cards
-            SurePlaySensor(n_player),  # n_cards
-            RiskyPlaySensor(n_player),  # n_cards
+    """
+    get default list of all used sensors
+    @param n_player: int
+    @return: List[GenericSensor]
+    """
+    return [DiscardKnowSensor(n_player),
+            DiscardUnknownSensor(n_player),
+            SurePlaySensor(n_player),
+            RiskyPlaySensor(n_player),
             NoHintLeftSensor(),
             HintNumberToPlaySensor(n_player),
             HintColorToPlaySensor(n_player),
             HintToDiscardSensor(n_player),
-            UselessDiscardSensor()]
+            UselessDiscardSensor(),
+            ThunderStrikeMoment()]
+
 
 def get_sensor_len(n_player: int):
+    """
+    Get the length of the default sensor list
+    @param n_player: int
+    @return: int
+    """
     return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
 
 
@@ -266,6 +333,11 @@ def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], prob: float):
 
 
 def check_hint_matrix(hints: List[ArrayLike]):
+    """
+    TODO Add Descritption
+    @param hints:
+    @return:
+    """
     r = []
     for card in hints:
         r.append(np.sum(np.any(card, axis=1)) == 1 or np.sum(np.any(card, axis=0)) == 1)
@@ -273,6 +345,13 @@ def check_hint_matrix(hints: List[ArrayLike]):
 
 
 def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, List]):
+    """
+    TODO Add Descritption
+    @param hints:
+    @param num_cards:
+    @param table_cards:
+    @return:
+    """
     ret = []
     numbers, colors = hints_received(hints, num_cards)
     lengths = [len(table_cards[i]) for i in table_cards.keys()]
@@ -288,7 +367,7 @@ def play_hinted(hints: List[ArrayLike], num_cards: int, table_cards: Dict[str, L
 
 def hints_received(hints: List[ArrayLike], num_cards: int):
     """
-    returns two arrays
+    TODO Add Descritption
     """
     ret_n = [-1 for _ in range(num_cards)]
     ret_c = [-1 for _ in range(num_cards)]
@@ -443,3 +522,5 @@ def hint_discard(knowledge_map: KnowledgeMap):
         j += 10
 
     return ret
+
+

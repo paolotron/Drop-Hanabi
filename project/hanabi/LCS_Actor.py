@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 from GameAdapter import GameAdapter, HintType
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike
 from random import choice
 
 
@@ -32,10 +32,10 @@ class LCSActor:
             self.paramDict[self.num_cards * 2 + i * 10 + 9] = (player, HintType.COLOR, "white")
 
     @staticmethod
-    def get_action_length():
+    def get_action_length(num_players: int):
         return 6
 
-    def act(self, act_string: NDArray) -> bool:
+    def act(self, act_string: ArrayLike) -> bool:
         """
         Calls GameAdapter's functions
         @param act_string: np.ndarray[bool] len = 6
