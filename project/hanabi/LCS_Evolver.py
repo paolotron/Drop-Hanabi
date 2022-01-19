@@ -156,10 +156,9 @@ def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
 
 def delete_mutation(rule: RuleSet, p: float = 0.05):
     """
-    TODO add Description
-    @param rule:
-    @param p:
-    @return:
+    Delete a random rule with probability p
+    @param rule: The ruleSet to mutate
+    @param p: the probability of deletion
     """
     num_rules = rule.number_rules()
     random_mask = np.random.choice(a=(True, False), size=num_rules, p=(1 - p, p))
