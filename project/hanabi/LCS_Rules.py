@@ -81,6 +81,16 @@ class RuleSet:
     def action_length(self) -> int:
         return self.action.shape[1]
 
+    def reinforce_rule(self, index: List[int], ):
+        arg = np.arange(self.number_rules())
+        for i in index:
+            arg[i] //= 2
+        arg[index] -= 1
+        arg = arg.argsort()
+        self.action = self.action[arg, :]
+        self.match_string = self.match_string[arg, :]
+        self.dont_care = self.dont_care[arg, :]
+
     def number_rules(self) -> int:
         return self.match_string.shape[0]
 
