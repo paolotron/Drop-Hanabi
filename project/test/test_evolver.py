@@ -11,12 +11,15 @@ class EvolverTest(unittest.TestCase):
         ruleset = Rule.RuleSet.unpack_rules(boot, Sens.get_sensor_len(4))
         self.assertEqual(np.unique(ruleset.action, axis=1).shape, ruleset.action.shape)
 
-    def test_bootstrpped_player(self):
-        man = Ev.GameManager(4)
-        boot = Ev.bootstrap_rules(4)
-        p1, p2, p3, p4 = [Rule.RuleSet.unpack_rules(boot, man.sensor_len()) for _ in range(4)]
-        fit = man.get_fitness([p1, p2, p3, p4])
-        pass
+    def test_bootsrapped_player(self):
+        n_players = 5
+        man = Ev.GameManager(n_players)
+        boot = Ev.bootstrap_rules(n_players)
+        p = [Rule.RuleSet.unpack_rules(boot, man.sensor_len()) for _ in range(n_players)]
+        fit = man.get_fitness(p)
+        print(f"{fit[0].points}, {fit[0].loss}")
+        man.stop()
+
 
 if __name__ == '__main__':
     unittest.main()

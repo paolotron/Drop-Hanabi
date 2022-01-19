@@ -1,14 +1,13 @@
 import socket
 import time
 from abc import ABC, abstractmethod
-from collections import UserDict
 from typing import Union, List
 from constants import *
 
 import GameData
 from enum import Enum
 
-from knowledge import KnowledgeMap, Color
+from knowledge import KnowledgeMap
 
 
 class HintType(Enum):
@@ -16,8 +15,10 @@ class HintType(Enum):
     COLOR = 1
 
 
+# Debug Variables
 verbose = False
 verbose_min = False
+verbose_game = False
 
 
 class EndGameException(Exception):
@@ -49,6 +50,7 @@ class GameAdapter:
         self.board_state = None
         self.board_state: GameData.ServerGameStateData
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.final_score = None
         while True:
             try:
                 self.socket.connect((ip, port))
@@ -152,7 +154,9 @@ class GameAdapter:
             response: GameData.ServerActionValid
             self.move_history.append(response)
         elif type(response) is GameData.ServerGameOver:
+            response: GameData.ServerGameOver
             self.game_end = True
+            self.final_score = response.score
             raise EndGameException()
         elif type(response) is GameData.ServerInvalidDataReceived and verbose:
             print(f"{self.name} TURN: {type(response)}, data: {response.data}")
@@ -181,7 +185,12 @@ class GameAdapter:
         p.remove(self.name)
         return tuple(p)
 
-    def _wait_for(self, message_types):
+    def _wait_for(self, message_types: List[GameData.GameData]):
+        """
+        Wait for a specific list of responses
+        @param message_types:
+        @return: response
+        """
         response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
         while type(response) not in message_types and not self.game_end:
             if verbose:
@@ -201,7 +210,7 @@ class GameAdapter:
         """
         # print(f"{self.name} is HINTING")
         type_h = {HintType.NUMBER: 'value', HintType.COLOR: 'colour'}[type_h]
-        if verbose:
+        if verbose_game:
             print(f"{self.name} SENDING HINT TO {player} : {type_h}, {val}")
         try:
             self._send_action(GameData.ClientHintData(self.name, player, type_h, val))
@@ -230,11 +239,11 @@ class GameAdapter:
                                      GameData.ServerPlayerThunderStrike,
                                      GameData.ServerPlayerMoveOk])
 
-        except (ConnectionResetError, EndGameException) as e:
+        except (ConnectionResetError, EndGameException) as _:
             return True
-        if type(result) is GameData.ServerPlayerMoveOk and verbose:
+        if type(result) is GameData.ServerPlayerMoveOk and verbose_game:
             print(f"PLAYED {result.card} FROM {self.name} OK!")
-        if type(result) is GameData.ServerPlayerThunderStrike and verbose:
+        if type(result) is GameData.ServerPlayerThunderStrike and verbose_game:
             print(f"PLAYED {result.card} FROM {self.name} THUNDERSTRIKE!")
         if type(result) in [GameData.ServerPlayerMoveOk, GameData.ServerPlayerThunderStrike, GameData.ServerGameOver]:
             return True
@@ -254,7 +263,7 @@ class GameAdapter:
             result = self._wait_for([GameData.ServerActionValid, GameData.ServerActionInvalid])
         except (ConnectionResetError, EndGameException) as e:
             return True
-        if verbose:
+        if verbose_game and type(result) is GameData.ServerActionValid:
             print(f"DISCARDED {result.card} FROM {self.name}")
         if type(result) in [GameData.ServerActionValid, GameData.ServerGameOver]:
             return True
@@ -263,17 +272,24 @@ class GameAdapter:
         raise ValueError
 
     def end_game_data(self):
-        points = sum([max(map(lambda x: x.value, cards), default=0) for cards in self.knowledgeMap.tableCards.values()])
         return {
             "n_turns": len(self.move_history),
-            "points": points,
-            "loss": self.knowledgeMap.usedStormTokens == 2
+            "points": self.final_score,
+            "loss": self.final_score == 0
         }
 
 
 class Player(ABC):
+    """
+    Abstract class for a generic player
+    """
 
     def __init__(self, name: str, conn_params=None):
+        """
+        Init method for the generic player, set ups the connection parameters
+        @param name: str
+        @param conn_params: dictionary with name, ip, port, datasize
+        """
         self.name = name
         if conn_params is None:
             self.start_dict = {
@@ -284,22 +300,49 @@ class Player(ABC):
             }
         else:
             self.start_dict = conn_params
+        self.io: GameAdapter
         self.io = None
 
     @abstractmethod
-    def make_action(self, state):
+    def make_action(self, state: KnowledgeMap):
+        """
+        Method for making an action given the current state
+        @param state: knowledge map representing the state
+        @return: None
+        """
         pass
 
     def setup(self, *args, **kwargs):
+        """
+        Generic setup method, called before starting the game, can be inherithed
+        @param args:
+        @param kwargs:
+        @return:
+        """
         pass
 
     def cleanup(self):
+        """
+        Generic cleanup method, called after finishing the game, can be inherithed
+        @return:
+        """
         pass
 
     def end_game_data(self):
+        """
+        return the result of the match
+        @return: dict with end game info
+        """
         return self.io.end_game_data()
 
     def start(self, *args, **kwargs):
+        """
+        method to call for starting the game and running it
+        runs setup -> make_action -> ... -> make_action -> cleanup
+        @param args:
+        @param kwargs:
+        @return: None
+        """
 
         if self.io is None:
             self.io = GameAdapter(**self.start_dict)

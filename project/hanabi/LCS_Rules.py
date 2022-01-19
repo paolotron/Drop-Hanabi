@@ -7,6 +7,9 @@ from numpy import uint8
 
 @dataclass
 class RuleSet:
+    """
+    Simple container for the rules defined by the LCS system
+    """
     match_string: NDArray[bool]
     dont_care: NDArray[bool]
     action: NDArray[bool]
@@ -57,17 +60,25 @@ class RuleSet:
 
     @staticmethod
     def create_rule_set(rule_match: NDArray[bool], dont_care: NDArray[bool], action: NDArray[bool]):
+        """
+        Factory method for ruleset creation, dimensions between rule_match and dont_care must match
+        number of rows of rule_match must be equal to number of rows of action
+        @param rule_match: NDarray
+        @param dont_care: NDarray
+        @param action: NDarray
+        @return:
+        """
         assert rule_match.shape == dont_care.shape
         assert rule_match.shape[0] == action.shape[0]
         return RuleSet(rule_match, dont_care, action)
 
-    def sensor_length(self):
+    def sensor_length(self) -> int:
         return self.match_string.shape[1]
 
-    def action_length(self):
+    def action_length(self) -> int:
         return self.action.shape[1]
 
-    def number_rules(self):
+    def number_rules(self) -> int:
         return self.match_string.shape[0]
 
     def cover(self, situation: NDArray[uint8]) -> None:
@@ -208,15 +219,13 @@ class LCSRules:
         """
         return self.__rule.match(sensor_activation)
 
-    def __cover(self, sensor_activation: NDArray[uint8]):
+    def __cover(self, sensor_activation: NDArray[uint8]) -> int:
         """
         add a new random to cover for an unmatched situation
         @param sensor_activation:
-        @return:
+        @return: Index of added rule
         """
         self.__rule.cover(sensor_activation)
         self.__rule_match = np.hstack([self.__rule_match, np.zeros((self.__rule_match.shape[0], 1))])
         self.__critical_rules = np.append(self.__critical_rules, False)
-        # self.__rule_use.append(1)
-        # self.__rule_match = np.append(self.__rule_use, 1)
         return len(self.__rule_match) - 1
