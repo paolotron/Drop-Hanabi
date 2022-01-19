@@ -259,7 +259,7 @@ def get_sensor_len(n_player: int):
     return sum(map(lambda x: x.get_out_size(), package_sensors(n_player)))
 
 
-def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int:
+def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List], prob: float = 1) -> int:
     """
     return -1 if a card is discardable, 1 if it is playable and 0 if not have enough information
     @param probability: matrix 5x5
@@ -276,7 +276,7 @@ def __evaluate_card(probability: ArrayLike, table_cards: Dict[str, List]) -> int
             if probability[index.value][card.value - 1] == 1:
                 # discard
                 return -1
-    if any([x >= 1 for x in p]):
+    if any([x >= prob for x in p]):
         # playable
         return 1
     # not enough information on the card
