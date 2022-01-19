@@ -242,6 +242,16 @@ def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet, child_number: int):
     return offspring
 
 
+def single_crossover(sigma_male: RuleSet, child_number: int):
+    offspring = []
+    for _ in range(child_number):
+        child = sigma_male
+        # delete_mutation(r, p=0.01)
+        child = match_mutation(child, p=0.01)
+        offspring.append(child)
+    return offspring
+
+
 def fitness_evaluation(match_results: List[Fitness], fit_type=0) -> float:
     """
     Evaluate fitness functions from a list of matches into a value from 0 to 1
@@ -297,6 +307,20 @@ def tournament_play(players: List[RuleSet], man: GameManager, repetitions: int =
             for ix, r in zip(c, res):
                 players[ix] = delete_critical_rules(players[ix], r.rule_data.critical_rules)
             [result[ix].append(r) for ix, r in zip(c, res)]
+    return result
+
+
+def stochastic_play(players: List[RuleSet], man: GameManager, repetitions: int = 1):
+    result = tuple([[] for _ in range(len(players))])
+    n_players = man.n_players
+    indx = list(range(len(players)))
+    np.random.shuffle(indx)
+    for _ in range(repetitions):
+        for c in range(0, len(players), n_players):
+            res = man.get_fitness([players[x] for x in indx[c:c+n_players]])
+            for i, r in zip(indx[c: c+n_players], res):
+                players[i] = delete_critical_rules(players[i], r.rule_data.critical_rules)
+                result[i].append(r)
     return result
 
 
