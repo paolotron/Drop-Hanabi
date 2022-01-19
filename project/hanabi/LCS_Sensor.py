@@ -48,7 +48,9 @@ class GenericSensor(ABC):
 
 class DiscardKnowSensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that checks which card of Agent's hand are SURE discard,
+    it returns a string of 4 (or 5 in case of 2 or 3 players) boolean
+    that are True if the card is DEFINITELY discardable, False on the contrary
     """
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
@@ -66,7 +68,10 @@ class DiscardKnowSensor(GenericSensor):
 
 class DiscardUnknownSensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that use the convention to said: "this card doesn't have hint
+    so it is a POSSIBLE discard".
+    it returns a string of 4 (or 5 in case of 2 or 3 players) boolean
+    that are True if the card is a POSSIBLE discard, False on the contrary
     """
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
@@ -83,7 +88,9 @@ class DiscardUnknownSensor(GenericSensor):
 
 class SurePlaySensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that checks which card of Agent's hand are SURE play.
+    It returns a string of 4 (or 5 in case of 2 or 3 players) boolean
+    that are True if the card is DEFINITELY playable, False on the contrary
     """
     def __init__(self, n_player: int):
         if n_player == 2 or n_player == 3:
@@ -101,7 +108,10 @@ class SurePlaySensor(GenericSensor):
 
 class RiskyPlaySensor(GenericSensor):
     """
-    TODO Add Description
+    Sensor that use the convention to said: "if I received one hint on this card and
+    in the table I see that I can play that value or color, I can try to play that card".
+    it returns a string of 4 (or 5 in case of 2 or 3 players) boolean
+    that are True if the card is a POSSIBLE playable, False on the contrary
     """
     def __init__(self, n_player: int, probability=0.8):
         if n_player == 2 or n_player == 3:
@@ -158,7 +168,7 @@ class ThunderStrikeMoment(GenericSensor):
 
     def activate(self, knowledge_map) -> NDArray[bool_]:
         if knowledge_map.getStormTokens() == 2:
-            pass
+            print("FACCIAMO SCHIFO")
         return np.array(knowledge_map.getStormTokens() == 2)
 
 
@@ -324,7 +334,7 @@ def play_unknown(my_hand: List[ArrayLike], hints: List[ArrayLike], prob: float):
     ret = check_hint_matrix(hints)
     if not any(ret):
         ret = []
-        for i, my_knowledge_matrix in enumerate(my_hand):
+        for i, my_knowledge_matrix in enumerate(knowledge.getProbabilityMatrix(knowledge.getPlayerName())):
             if np.any(np.sum(my_knowledge_matrix, axis=1)[i] >= prob):
                 ret.append(True)
             else:
