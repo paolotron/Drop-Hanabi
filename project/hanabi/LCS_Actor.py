@@ -1,8 +1,7 @@
-from typing import List
 import numpy as np
-from GameAdapter import GameAdapter, HintType
 from numpy.typing import ArrayLike
-from random import choice
+
+from GameAdapter import GameAdapter, HintType
 
 
 class LCSActor:
@@ -39,6 +38,7 @@ class LCSActor:
 
     @staticmethod
     def get_action_length(num_players: int):
+        # Coincidence that for all possible number of players we always need 6 bits
         return 6
 
     def act(self, act_string: ArrayLike) -> bool:

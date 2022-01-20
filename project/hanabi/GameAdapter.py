@@ -130,10 +130,7 @@ class GameAdapter:
         @param action: GameData
         """
 
-        # print(f"{self.name} SENDING ACTION {action}")
         self.socket.send(action.serialize())
-        # self.socket.send(GameData.ClientGetGameStateRequest(self.name).serialize())
-        # response = GameData.GameData.deserialize(self.socket.recv(self.datasize))
 
     def _register_action(self, response: GameData.ServerToClientData):
         if verbose:

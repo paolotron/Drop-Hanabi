@@ -3,6 +3,9 @@ import numpy as np
 
 
 class Color(Enum):
+    """
+    Simple enum for card coloros
+    """
     RED = 0
     BLUE = 1
     GREEN = 2

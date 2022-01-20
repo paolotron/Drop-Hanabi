@@ -219,17 +219,6 @@ class HintToDiscardSensor(GenericSensor):
         return np.array(hint_discard(knowledge_map))
 
 
-def get_debug_string(n_players, sensor_type, idx=0):
-    """
-    TODO DELETE THIS FUNCTION
-    """
-    i = 0
-    for sens in package_sensors(n_players):
-        if type(sens) is sensor_type:
-            return i + idx
-        i += sens.get_out_size()
-
-
 def package_sensors(n_player: int):
     """
     get default list of all used sensors

@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 from numpy.typing import NDArray
 import LCS_Sensor as Sens
-import server_custom as server
+import server
 from LCS_Actor import LCSActor
 from LCS_Rules import LCSRules, EndResult
 from LCS_Rules import RuleSet
@@ -17,29 +17,31 @@ from player_LCS import LCSPlayer
 
 class Evolver:
 
-    def __init__(self, num_players):
+    def __init__(self, num_players, pretrained: str = ""):
         self.num_players = num_players
-        self.num_population = 10
+        self.num_population = num_players
         self.gameManager = GameManager(num_players)
-        self.rules_set = [RuleSet.empty_rules(self.gameManager.sensor_len(), self.gameManager.action_len())
-                          for _ in range(self.num_population)]
+        if pretrained:
+            rule = np.load(f"../hanabi/models/{pretrained}.npy")
+            rule = RuleSet.unpack_rules(rule, self.gameManager.sensor_len())
+            self.population = [rule.copy() for _ in range(self.num_population)]
+        else:
+            self.population = [RuleSet.empty_rules(self.gameManager.sensor_len(), self.gameManager.action_len())
+                               for _ in range(self.num_population)]
 
     def evolve(self):
-        results = tournament_play(self.rules_set, self.gameManager, 1)
-
-        points = np.zeros(len(self.rules_set))
-        for i, player in enumerate(results):
-            tot = 0
-            for fit in player:
-                fit: Fitness
-                tot += fit.points
-            points[i] = tot
-        ind_p1, ind_p2 = points.argpartition(-2)[-2:]
-        print(points[ind_p1] / len(results[0]), points[ind_p2] / len(results[0]), self.rules_set[0].number_rules())
-        self.rules_set = full_crossover(self.rules_set[ind_p1], self.rules_set[ind_p2], self.num_population - 2)
-
-        # sto metodo mi ritorna altri ruleSet
-        return self.rules_set
+        results: List[Fitness] = tournament_play(self.population, self.gameManager, 10)[0]
+        player = self.population[0]
+        wins = list(filter(lambda x: not x.loss, results))
+        if wins:
+            fit = max(wins, key = lambda x: x.points)
+        else:
+            fit = max(results, key = lambda x: x.n_turns)
+        player.reinforce_rule(fit.rule_data.rule_usage)
+        print(fitness_evaluation(results, 2), player.number_rules())
+        delete_last_rule(player, player.number_rules() // 100)
+        for i in range(1, self.num_population):
+            self.population[i] = player.copy()
 
 
 @dataclass(frozen=True)
@@ -112,6 +114,10 @@ class GameManager:
         self.serv.terminate()
 
     def __del__(self):
+        """
+        Stop the server forcibly
+        @return: None
+        """
         self.stop()
 
 
@@ -144,7 +150,6 @@ def point_mutation(rule: RuleSet, p: float = 0.01) -> RuleSet:
     Bit flip rule set with probability p
     @param rule: rule set
     @param p: probability of mutation
-    @param copy: if True does not modify the parent creating a copy
     @return: new rule set
     """
     packed_rules = rule.pack_rules()
@@ -169,10 +174,10 @@ def delete_mutation(rule: RuleSet, p: float = 0.05):
 
 def match_mutation(rule: RuleSet, p: float = 0.05) -> RuleSet:
     """
-    TODO add Desscription
-    @param rule:
-    @param p:
-    @return:
+    Like point Mutation but does not touch the action section of the rule
+    @param rule: RuleSet
+    @param p: Probability of mutation
+    @return: new RuleSet
     """
     packed_rules = rule.pack_rules()
     random_mask = np.random.choice(a=(False, True), size=packed_rules.shape, p=(1 - p, p))
@@ -219,11 +224,11 @@ def crossover_pitts_style(ruleset_a: RuleSet, ruleset_b: RuleSet, paradigm: int 
 
 def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet, child_number: int):
     """
-    TODO Add Description
-    @param ruleset_a:
-    @param ruleset_b:
-    @param child_number:
-    @return:
+    Crossover between ruleset a and b generating specified number of children
+    @param ruleset_a: first parent ruleset
+    @param ruleset_b: second parent ruleset
+    @param child_number: number of children
+    @return: List[RuleSet]
     """
     offspring = [ruleset_a, ruleset_b]
     s_len = ruleset_a.sensor_length()
@@ -235,29 +240,44 @@ def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet, child_number: int):
         child = cut_p1.copy()
         child[rule_swap, :] = cut_p2[rule_swap, :]
         r = RuleSet.unpack_rules(child, s_len)
-        # delete_mutation(r)
         r = match_mutation(r, p=0.2)
         offspring.append(r)
     return offspring
 
 
 def single_crossover(sigma_male: RuleSet, child_number: int):
+    """
+
+    @param sigma_male:
+    @param child_number:
+    @return:
+    """
     offspring = []
     for _ in range(child_number):
         child = sigma_male
-        # delete_mutation(r, p=0.01)
         child = match_mutation(child, p=0.01)
         offspring.append(child)
     return offspring
 
 
 def shuffle_rules(rule: RuleSet):
+    """
+    Shuffle rules randomly from a dataset
+    @param rule: RuleSet
+    @return: Shuffled ruleset
+    """
     packed_rules = rule.pack_rules()
     np.random.shuffle(packed_rules)
     return RuleSet.unpack_rules(packed_rules, rule.sensor_length())
 
 
 def delete_last_rule(rule: RuleSet, trim: int = 1):
+    """
+    Delete last trim rules from ruleset
+    @param rule: Ruleset
+    @param trim: number of rules to delete
+    @return: None
+    """
     rule.action = rule.action[:-trim, :]
     rule.dont_care = rule.dont_care[:-trim, :]
     rule.match_string = rule.match_string[:-trim, :]
@@ -322,6 +342,13 @@ def tournament_play(players: List[RuleSet], man: GameManager, repetitions: int =
 
 
 def stochastic_play(players: List[RuleSet], man: GameManager, repetitions: int = 1):
+    """
+    Play random matches among players
+    @param players: list of rule sets
+    @param man: game manager from where to use fitness function
+    @param repetitions: number of matches against the same
+    @return: tuple of fitness lists for each player
+    """
     result = tuple([[] for _ in range(len(players))])
     n_players = man.n_players
     indx = list(range(len(players)))
@@ -335,84 +362,6 @@ def stochastic_play(players: List[RuleSet], man: GameManager, repetitions: int =
     return result
 
 
-def bootstrap_rules(n_players: int) -> NDArray:
-    """
-    TODO remove this function
-    @param n_players:
-    @return:
-    """
-    n_cards = 4 if n_players > 3 else 5
-    len_rule = Sens.get_sensor_len(n_players)
-    other_players = n_players - 1
-    rule_set = np.zeros((n_cards * 4 + other_players * 20, len_rule * 2 + LCSActor.get_action_length(n_players)),
-                        dtype=bool)
-
-    idx_thunderstrike = Sens.get_debug_string(n_players, Sens.ThunderStrikeMoment, 0)
-    for i in range(n_cards):
-        idx = Sens.get_debug_string(n_players, Sens.SurePlaySensor, i)
-        idx2 = Sens.get_debug_string(n_players, Sens.RiskyPlaySensor, i)
-        rule_set[i, idx] = True
-        rule_set[i, len_rule: len_rule * 2] = True
-        rule_set[i, idx + len_rule] = False
-        rule_set[i + n_cards, idx2] = True
-        rule_set[i + n_cards, len_rule: len_rule * 2] = True
-        rule_set[i + n_cards, len_rule + idx_thunderstrike] = False
-        rule_set[i + n_cards, idx2 + len_rule] = False
-        act = list(map(lambda x: bool(int(x)), str(bin(i))[2:][::-1]))
-        for j, a in enumerate(act):
-            rule_set[i, len_rule * 2 + j] = a
-            rule_set[i + n_cards, len_rule * 2 + j] = a
-
-    idx_hint = Sens.get_debug_string(n_players, Sens.NoHintLeftSensor, 0)
-    for i in range(other_players):
-        for j in range(5):
-            idx = Sens.get_debug_string(n_players, Sens.HintNumberToPlaySensor, i * 5 + j)
-            idx2 = Sens.get_debug_string(n_players, Sens.HintColorToPlaySensor, i * 5 + j)
-            act = list(map(lambda x: bool(int(x)), str(bin(n_cards * 2 + i * 10 + j))[2:][::-1]))
-            act2 = list(map(lambda x: bool(int(x)), str(bin(n_cards * 2 + i * 10 + j + 5))[2:][::-1]))
-            rule_set[n_cards * 2 + i * 10 + j, idx] = True
-            rule_set[n_cards * 2 + i * 10 + j, len_rule: len_rule * 2] = True
-            rule_set[n_cards * 2 + i * 10 + j, idx + len_rule] = False
-            rule_set[n_cards * 2 + i * 10 + j, idx_hint + len_rule] = False
-            rule_set[n_cards * 2 + i * 10 + j + 5, idx2] = True
-            rule_set[n_cards * 2 + i * 10 + j + 5, len_rule: len_rule * 2] = True
-            rule_set[n_cards * 2 + i * 10 + j + 5, idx2 + len_rule] = False
-            rule_set[n_cards * 2 + i * 10 + j + 5, idx_hint + len_rule] = False
-            for k, a in enumerate(act):
-                rule_set[n_cards * 2 + i * 10 + j, len_rule * 2 + k] = a
-            for k, a in enumerate(act2):
-                rule_set[n_cards * 2 + i * 10 + j + 5, len_rule * 2 + k] = a
-
-    for i in range(other_players):
-        for j in range(10):
-            idx = Sens.get_debug_string(n_players, Sens.HintToDiscardSensor, i * 10 + j)
-            act = list(map(lambda x: bool(int(x)), str(bin(n_cards * 2 + i * 10 + j))[2:][::-1]))
-            rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, idx] = True
-            rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, len_rule: len_rule * 2] = True
-            rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, idx + len_rule] = False
-            rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, idx_hint + len_rule] = False
-            for k, a in enumerate(act):
-                rule_set[n_cards * 2 + other_players * 10 + i * 10 + j, len_rule * 2 + k] = a
-
-    idx_useless = Sens.get_debug_string(n_players, Sens.UselessDiscardSensor, 0)
-    for i in range(n_cards):
-        idx = Sens.get_debug_string(n_players, Sens.DiscardKnowSensor, i)
-        idx2 = Sens.get_debug_string(n_players, Sens.DiscardUnknownSensor, i)
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i, idx] = True
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i, len_rule: len_rule * 2] = True
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i, idx + len_rule] = False
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i, len_rule + idx_useless] = False
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i + n_cards, idx2] = True
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i + n_cards, len_rule: len_rule * 2] = True
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i + n_cards, idx2 + len_rule] = False
-        rule_set[n_cards * 2 + other_players * 10 * 2 + i + n_cards, len_rule + idx_useless] = False
-        act = list(map(lambda x: bool(int(x)), str(bin(i + n_cards))[2:][::-1]))
-        for j, a in enumerate(act):
-            rule_set[n_cards * 2 + other_players * 10 * 2 + i, len_rule * 2 + j] = a
-            rule_set[n_cards * 2 + other_players * 10 * 2 + i + n_cards, len_rule * 2 + j] = a
-    return rule_set
-
-
 def save_LCS(lcs_rule: RuleSet, num_players: int):
     """
     Save model to folder
@@ -422,28 +371,3 @@ def save_LCS(lcs_rule: RuleSet, num_players: int):
     """
     matr = lcs_rule.pack_rules()
     np.save(f"../hanabi/models/ruleset_{num_players}.npy", matr)
-
-
-if __name__ == '__main__':
-    # TODO Delete Main
-
-    n_players = 3
-    g = GameManager(n_players)
-    population = [RuleSet.empty_rules(g.sensor_len(), g.action_len()) for _ in range(10)]
-
-    for _ in range(10):
-        fit = tournament_play(population, g, 1)
-        result = []
-        for i, f in enumerate(fit):
-            result.append((i, sum(elem.points for elem in f)))
-        result.sort(key=lambda x: x[1])
-        new_pop = []
-        for e in result[5:]:
-            new_pop.append(population[e[0]])
-        for _ in range(2):
-            ret = crossover_pitts_style(new_pop[3], new_pop[4], 2)
-            new_pop.append(ret[0])
-            new_pop.append(ret[1])
-        new_pop.append(point_mutation(new_pop[4], 0.05))
-        population = new_pop.copy()
-    g.stop()
