@@ -462,7 +462,6 @@ def hint_number(knowledge_map: KnowledgeMap) -> List[bool]:
                                knowledge_map.getTableCards(),
                                hand_player)
             ret.append(val)
-
     return ret
 
 
@@ -496,7 +495,6 @@ def hint_color(knowledge_map: KnowledgeMap):
                               knowledge_map.getTableCards(),
                               hand_player)
             ret.append(val)
-
     return ret
 
 
@@ -526,7 +524,6 @@ def hint_discard(knowledge_map: KnowledgeMap):
             ret[j + 5 + Color.fromstr(card.color).value] = color_can_be_discarded(card.color,
                                                                                   knowledge_map.getTableCards())
         j += 10
-
     return ret
 
 
