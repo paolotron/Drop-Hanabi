@@ -24,21 +24,17 @@ class Evolver:
         if pretrained:
             rule = np.load(f"../hanabi/models/{pretrained}.npy")
             rule = RuleSet.unpack_rules(rule, self.gameManager.sensor_len())
-            self.population = [rule.copy() for _ in range(self.num_population)]
         else:
-            self.population = [RuleSet.empty_rules(self.gameManager.sensor_len(), self.gameManager.action_len())
-                               for _ in range(self.num_population)]
+            rule = RuleSet.empty_rules(self.gameManager.sensor_len(), self.gameManager.action_len())
+        self.population = [rule.copy() for _ in range(self.num_population)]
 
     def evolve(self):
         results: List[Fitness] = tournament_play(self.population, self.gameManager, 10)[0]
         player = self.population[0]
-        wins = list(filter(lambda x: not x.loss, results))
-        if wins:
-            fit = max(wins, key = lambda x: x.points)
-        else:
+        fit = max(results, key = lambda x: x.points)
+        if not fit.points:
             fit = max(results, key = lambda x: x.n_turns)
         player.reinforce_rule(fit.rule_data.rule_usage)
-        print(fitness_evaluation(results, 2), player.number_rules())
         delete_last_rule(player, player.number_rules() // 100)
         for i in range(1, self.num_population):
             self.population[i] = player.copy()
