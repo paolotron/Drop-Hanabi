@@ -142,7 +142,7 @@ class EndResult:
     """
     rule_match: NDArray
     critical_rules: NDArray
-    rule_usage: Tuple[int]
+    rule_usage: Tuple
 
 
 class LCSRules:
@@ -201,7 +201,7 @@ class LCSRules:
         Post-mortem data of usage of the rules,
         returns EndResult struct
         """
-        return EndResult(self.__rule_match, self.__critical_rules, self.__rule_use)
+        return EndResult(self.__rule_match, self.__critical_rules, tuple(self.__rule_use))
 
     def signal_critical_failure(self):
         self.__critical_rules[self.__rule_use[-1]] = True
