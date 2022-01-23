@@ -72,7 +72,7 @@ class GameManager:
         """
         @return: action length
         """
-        return LCSActor.get_action_length()
+        return LCSActor.get_action_length(self.n_players)
 
     def sensor_len(self):
         """
@@ -89,7 +89,7 @@ class GameManager:
         """
         if sensors is None:
             sensors = Sens.package_sensors(self.n_players)
-        lcs_rule_list = [LCSRules(sensors, LCSActor.get_action_length(), rule) for rule in rule_list]
+        lcs_rule_list = [LCSRules(sensors, LCSActor.get_action_length(self.n_players), rule) for rule in rule_list]
         threads = [Thread(target=player.start, args=[lcs_rule_list[i]]) for i, player in enumerate(self.players)]
         [t.start() for t in threads]
         [t.join() for t in threads]

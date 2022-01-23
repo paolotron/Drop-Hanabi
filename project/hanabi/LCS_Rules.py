@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Tuple
 import numpy as np
 from numpy.typing import NDArray

@@ -36,7 +36,7 @@ class LCSActor:
             self.paramDict[self.num_cards * 2 + i * 10 + 9] = (player, HintType.COLOR, "white")
 
     @staticmethod
-    def get_action_length():
+    def get_action_length(num_player: int):
         # Coincidence that for all possible number of players we always need 6 bits
         return 6
 
