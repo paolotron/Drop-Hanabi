@@ -63,9 +63,9 @@ class RuleSet:
         """
         Factory method for ruleset creation, dimensions between rule_match and dont_care must match
         number of rows of rule_match must be equal to number of rows of action
-        @param rule_match: NDarray
-        @param dont_care: NDarray
-        @param action: NDarray
+        @param rule_match: NDArray
+        @param dont_care: NDArray
+        @param action: NDArray
         @return:
         """
         assert rule_match.shape == dont_care.shape
@@ -136,9 +136,9 @@ class RuleSet:
 @dataclass(repr=False, frozen=True)
 class EndResult:
     """
-    @rule_match: bool matrix with n_rules columns and n_turns rows, True if rule was matcherd
-    @critical_rules: array with n_rules size, True if rule casued fatal crash
-    @rule_usage: list ints that list the indexes of activated rules
+    @rule_match: bool matrix with n_rules columns and n_turns rows, True if rule was matched
+    @critical_rules: array with n_rules size, True if rule caused fatal crash
+    @rule_usage: list hints that list the indexes of activated rules
     """
     rule_match: NDArray
     critical_rules: NDArray

@@ -65,7 +65,6 @@ class GameAdapter:
         self.socket.send(GameData.ClientPlayerStartRequest(name).serialize())
         data = GameData.GameData.deserialize(self.socket.recv(datasize))
         assert type(data) is GameData.ServerPlayerStartRequestAccepted
-        # print("Ready: " + str(data.acceptedStartRequests) + "/" + str(data.connectedPlayers) + " players")
         data = GameData.GameData.deserialize(self.socket.recv(datasize))
         assert type(data) is GameData.ServerStartGameData
         self.socket.send(GameData.ClientPlayerReadyData(name).serialize())
@@ -78,7 +77,6 @@ class GameAdapter:
         Request Board State
         """
         data = GameData.ClientGetGameStateRequest(self.name)
-        # print(f"{self.name} SENDING STATE REQUEST")
         self.socket.send(data.serialize())
         if verbose_min:
             print(f"{self.name}: OPEN")
@@ -205,7 +203,6 @@ class GameAdapter:
         @param val: value or colour
         @return: True if the hint was sent successfully
         """
-        # print(f"{self.name} is HINTING")
         type_h = {HintType.NUMBER: 'value', HintType.COLOR: 'colour'}[type_h]
         if verbose_game:
             print(f"{self.name} SENDING HINT TO {player} : {type_h}, {val}")
@@ -228,7 +225,6 @@ class GameAdapter:
         @param card_number: index of the card
         @return: True if the card was correct False otherwise
         """
-        # print(f"{self.name} is PLAYING")
         try:
             self._send_action(GameData.ClientPlayerPlayCardRequest(self.name, card_number))
             result = self._wait_for([GameData.ServerActionInvalid,
@@ -254,7 +250,6 @@ class GameAdapter:
         @param card_number: card index
         @return: if the card was successfully discarded
         """
-        # print(f"{self.name} is DISCARDING")
         try:
             self._send_action(GameData.ClientPlayerDiscardCardRequest(self.name, card_number))
             result = self._wait_for([GameData.ServerActionValid, GameData.ServerActionInvalid])

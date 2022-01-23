@@ -108,7 +108,7 @@ class SurePlaySensor(GenericSensor):
 
 class RiskyPlaySensor(GenericSensor):
     """
-    Sensor that use the convention to said: "if I received one hint on this card and
+    Sensor that uses the convention to said: "if I received one hint on this card and
     in the table I see that I can play that value or color, I can try to play that card".
     it returns a string of 4 (or 5 in case of 2 or 3 players) boolean
     that are True if the card is a POSSIBLE playable, False on the contrary
