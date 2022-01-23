@@ -1,5 +1,4 @@
 from typing import Union
-
 from GameAdapter import Player
 import LCS_Actor as Act
 import LCS_Rules as Rul
@@ -21,8 +20,8 @@ class LCSPlayer(Player):
 
     def setup(self, rules: Rul.LCSRules):
         """
-        Setup befores starting a match
-        @param rules: RuleSet to be used during playy
+        Setup before starting a match
+        @param rules: RuleSet to be used during play
         @return: None
         """
         self.rules: Rul.LCSRules = rules
@@ -58,7 +57,7 @@ class LCSPlayer(Player):
 def main(name, num_players):
     rule_matr = np.load(f"./models/ruleset_{num_players}.npy")
     rule = Rul.LCSRules(Sen.package_sensors(num_players),
-                        Act.LCSActor.get_action_length(num_players),
+                        Act.LCSActor.get_action_length(),
                         Rul.RuleSet.unpack_rules(rule_matr, Sen.get_sensor_len(num_players)))
     player = LCSPlayer(name)
     player.start(rule)

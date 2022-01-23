@@ -16,12 +16,20 @@ class Color(Enum):
     @staticmethod
     def fromstr(string: str):
         string = string.lower()
-        dic = {"red": Color.RED, "blue": Color.BLUE, "green": Color.GREEN, "yellow": Color.YELLOW, "white": Color.WHITE}
+        dic = {"red": Color.RED,
+               "blue": Color.BLUE,
+               "green": Color.GREEN,
+               "yellow": Color.YELLOW,
+               "white": Color.WHITE}
         return dic[string]
 
     @staticmethod
     def fromint(number: int):
-        dic = {0: "red", 1: "blue", 2: "green", 3: "yellow", 4: "white"}
+        dic = {0: "red",
+               1: "blue",
+               2: "green",
+               3: "yellow",
+               4: "white"}
         return dic[number]
 
 
@@ -43,7 +51,8 @@ class KnowledgeMap:
         numPlayers = number of players in the game
         numCards = number of cards for each player
         hands = dictionary, key = name of a player, value = player's hand
-        hints = dictionary, key = nema of a player, value = boolean matrix, True if it's possible card False otherwise (initially all True)
+        hints = dictionary, key = name of a player, value = boolean matrix, True if it's possible card False otherwise
+            (initially all True)
         tableCards = list of cards, containing only the highest value played car for each color
         discardPile = list of discarded cards
         usedNoteTokens = int
@@ -101,7 +110,7 @@ class KnowledgeMap:
     def __updateMatrix(self, move):
         """
         updates self.matrix by subtracting the card played or discarded from the matrix
-        removes one matrix in self.hints at the index corresponding to the index of the card played or discarderd
+        removes one matrix in self.hints at the index corresponding to the index of the card played or discarded
         adds a new matrix at the end of the hints, representing the drawn card
         @param move: move taken from GameAdapter's move_history, only play or discard
         """
@@ -148,7 +157,7 @@ class KnowledgeMap:
             @param probability: if true returns probabilities, otherwise number of cards (used for tests)
             @return: list(5x5 numpy array)
             In case of less cards in the hand than the maximum number of holdable cards
-            the list returned is still as long as the maximum number of cards
+            the list returned is still as long as the maximum number of cards,
             but you should ignore the elements of non-existing cards
         """
         def getProb(mat, h):

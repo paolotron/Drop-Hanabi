@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import ArrayLike
-
 from GameAdapter import GameAdapter, HintType
 
 
@@ -37,7 +36,7 @@ class LCSActor:
             self.paramDict[self.num_cards * 2 + i * 10 + 9] = (player, HintType.COLOR, "white")
 
     @staticmethod
-    def get_action_length(num_players: int):
+    def get_action_length():
         # Coincidence that for all possible number of players we always need 6 bits
         return 6
 
@@ -62,5 +61,3 @@ class LCSActor:
         else:
             res = self.io.send_hint(*self.paramDict[index])
         return res
-
-

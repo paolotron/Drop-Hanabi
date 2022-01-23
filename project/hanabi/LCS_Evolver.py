@@ -3,7 +3,6 @@ from itertools import combinations
 from multiprocessing import Process
 from threading import Thread
 from typing import List
-
 import numpy as np
 from numpy.typing import NDArray
 import LCS_Sensor as Sens
@@ -31,9 +30,9 @@ class Evolver:
     def evolve(self):
         results: List[Fitness] = tournament_play(self.population, self.gameManager, 10)[0]
         player = self.population[0]
-        fit = max(results, key = lambda x: x.points)
+        fit = max(results, key=lambda x: x.points)
         if not fit.points:
-            fit = max(results, key = lambda x: x.n_turns)
+            fit = max(results, key=lambda x: x.n_turns)
         player.reinforce_rule(fit.rule_data.rule_usage)
         delete_last_rule(player, player.number_rules() // 100)
         for i in range(1, self.num_population):
@@ -60,7 +59,7 @@ class GameManager:
 
     def __init__(self, n_pl: int):
         """
-        init method, creates a prallel process for the server
+        init method, creates a parallel process for the server
         @param n_pl: number of players
         """
         self.n_players = n_pl
@@ -73,7 +72,7 @@ class GameManager:
         """
         @return: action length
         """
-        return LCSActor.get_action_length(self.n_players)
+        return LCSActor.get_action_length()
 
     def sensor_len(self):
         """
@@ -90,7 +89,7 @@ class GameManager:
         """
         if sensors is None:
             sensors = Sens.package_sensors(self.n_players)
-        lcs_rule_list = [LCSRules(sensors, LCSActor.get_action_length(self.n_players), rule) for rule in rule_list]
+        lcs_rule_list = [LCSRules(sensors, LCSActor.get_action_length(), rule) for rule in rule_list]
         threads = [Thread(target=player.start, args=[lcs_rule_list[i]]) for i, player in enumerate(self.players)]
         [t.start() for t in threads]
         [t.join() for t in threads]
@@ -308,7 +307,7 @@ def fitness_evaluation(match_results: List[Fitness], fit_type=0) -> float:
 
 def size_penality(rule: RuleSet, target_size: int):
     """
-    Evaluate rule set size and return a penality if size is above target size
+    Evaluate rule set size and return a penalty if size is above target size
     @param rule: rule set
     @param target_size: size
     @return: 1 - target_size / size
