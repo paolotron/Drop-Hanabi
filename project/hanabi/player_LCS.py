@@ -5,7 +5,7 @@ import LCS_Rules as Rul
 import LCS_Sensor as Sen
 from sys import argv
 import numpy as np
-
+import os
 
 class LCSPlayer(Player):
 
@@ -55,7 +55,7 @@ class LCSPlayer(Player):
 
 
 def main(name, num_players):
-    rule_matr = np.load(f"./models/ruleset_{num_players}.npy")
+    rule_matr = np.load(f"{os.path.dirname(os.path.abspath(__file__))}/models/ruleset_{num_players}.npy")
     rule = Rul.LCSRules(Sen.package_sensors(num_players),
                         Act.LCSActor.get_action_length(),
                         Rul.RuleSet.unpack_rules(rule_matr, Sen.get_sensor_len(num_players)))
