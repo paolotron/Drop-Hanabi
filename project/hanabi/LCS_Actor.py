@@ -37,7 +37,10 @@ class LCSActor:
 
     @staticmethod
     def get_action_length(num_player: int):
-        # Coincidence that for all possible number of players we always need 6 bits
+        """
+        Only for coincidence that for all possible number of players we always need 6 bits, so we can hardcode the return
+        @return action length
+        """
         return 6
 
     def act(self, act_string: ArrayLike) -> bool:
