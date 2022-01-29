@@ -242,10 +242,10 @@ def full_crossover(ruleset_a: RuleSet, ruleset_b: RuleSet, child_number: int):
 
 def single_crossover(sigma_male: RuleSet, child_number: int):
     """
-
-    @param sigma_male:
-    @param child_number:
-    @return:
+    Create a offspring from a single parent with mutations
+    @param sigma_male: The parent
+    @param child_number: The number of childs
+    @return: The offspring
     """
     offspring = []
     for _ in range(child_number):
