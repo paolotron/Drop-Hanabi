@@ -35,7 +35,7 @@ class GenericSensor(ABC):
         """
         pass
 
-    def get_activate(self, knowledge_map: KnowledgeMap):
+    def get_activate(self, knowledge_map: KnowledgeMap) -> NDArray[bool_]:
         """
         Method for getting the activation of a specific sensor
         @param knowledge_map:
