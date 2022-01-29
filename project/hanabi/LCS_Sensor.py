@@ -68,7 +68,7 @@ class DiscardKnowSensor(GenericSensor):
 
 class DiscardUnknownSensor(GenericSensor):
     """
-    Sensor that use the convention to said: "this card doesn't have hint
+    Sensor that uses the convention to said: "this card doesn't have hint
     so it is a POSSIBLE discard".
     it returns a string of 4 (or 5 in case of 2 or 3 players) boolean
     that are True if the card is a POSSIBLE discard, False on the contrary
